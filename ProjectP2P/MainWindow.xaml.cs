@@ -185,8 +185,8 @@ namespace ProjectP2P
                 }
                 try
                 {
-                    listener = new TcpListenerAdapted(IPAddress.Parse("192.168.2.103"), settings.ListenPort); //ACHTUNG TEST
-                    //Loopback zum Testen
+                    if(profile.localIPv6 != "") listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv6), settings.ListenPort);
+                    else listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv4), settings.ListenPort);
                     listener.Start();
                 }
                 catch
