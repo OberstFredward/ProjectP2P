@@ -185,7 +185,7 @@ namespace ProjectP2P
                 }
                 try
                 {
-                    listener = new TcpListenerAdapted(IPAddress.Parse("127.0.0.1"), settings.ListenPort);
+                    listener = new TcpListenerAdapted(IPAddress.Parse("192.168.2.103"), settings.ListenPort); //ACHTUNG TEST
                     //Loopback zum Testen
                     listener.Start();
                 }

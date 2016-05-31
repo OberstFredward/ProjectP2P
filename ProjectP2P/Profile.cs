@@ -60,7 +60,15 @@ namespace ProjectP2P
                     }
                     else
                     {
-                        InternetConnection = false;
+                        reply = pingCheckIp.Send("yahoo.com", 1000, new byte[32], new PingOptions());
+                        if (reply.Status == IPStatus.Success) //Ist der PingStatus erfolgreich? 
+                        {
+                            InternetConnection = true;
+                        }
+                        else
+                        {
+                            InternetConnection = false;
+                        }
                     }
                 }
             }
@@ -71,16 +79,18 @@ namespace ProjectP2P
             //--------------------------getLocalIPs-----------------------
             localIPv4 = "";
             localIPv6 = "";
-            string hostName = Dns.GetHostName();
-            for (int i = 0; i < Dns.GetHostEntry(hostName).AddressList.Length; i++)
+
+            NetworkInterface[] adapters = NetworkInterface.GetAllNetworkInterfaces();
+            foreach (NetworkInterface adapter in adapters)
             {
-                if (Dns.GetHostEntry(hostName).AddressList[i].IsIPv6LinkLocal == true)
+                if (adapter.OperationalStatus == OperationalStatus.Up && adapter.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
                 {
-                    localIPv6 = Dns.GetHostEntry(hostName).AddressList[i].ToString();
-                }
-                else if (Dns.GetHostEntry(hostName).AddressList[i].IsIPv6LinkLocal == false)
-                {
-                    localIPv4 = Dns.GetHostEntry(hostName).AddressList[i].ToString();
+                    IPInterfaceProperties properties = adapter.GetIPProperties();
+                    foreach (var ip in properties.UnicastAddresses)
+                    {
+                        if (ip.Address.AddressFamily == AddressFamily.InterNetwork) localIPv4 = ip.Address.ToString();
+                        if (ip.Address.AddressFamily == AddressFamily.InterNetworkV6) localIPv6 = ip.Address.ToString();
+                    }
                 }
             }
             //-------------------------------getExternalIPs-----------------------
