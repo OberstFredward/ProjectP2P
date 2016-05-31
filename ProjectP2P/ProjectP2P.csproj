@@ -60,6 +60,7 @@
     <Compile Include="ChatWindow.xaml.cs">
       <DependentUpon>ChatWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="IPv6TcpClient.cs" />
     <Compile Include="PartnerProfile.cs" />
     <Compile Include="Profile.cs" />
     <Compile Include="Settings.cs" />

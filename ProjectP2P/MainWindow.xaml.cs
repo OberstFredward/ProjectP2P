@@ -321,9 +321,18 @@ namespace ProjectP2P
         private void SendSyncRequest()
         {
             byte IpAdressCheck = CheckIpAdress(txbVerbinden.Text);
+            if (settings.enableLocalOnly)
+            {
+                if (IpAdressCheck > 1)
+                {
+                    MessageBox.Show("Sie haben nur lokale Verbindungen aktiviert.\nBitte geben Sie eine lokale IP-Adresse an,\noder überarbeiten Sie Ihre Einstellungen", "Keine lokale IP", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+            }
             if (IpAdressCheck >= 0 && IpAdressCheck <= 3) //0-3 gültige IPs, bei 255 -> Fehler
             {
-                sender = new TcpClient();
+                sender = new TcpClient(AddressFamily.InterNetworkV6);
+                sender.Client.DualMode = true; // IPv6 & IPv4 erlauben --> Dualmode seid .NET 4.5
                 Stream tcpStream = null;
                 string IpAdressString = txbVerbinden.Text;
                 //Weil er unten bei der Übergabe meckert -> Aufgrund der späteren übernahme des Objekts eines anderen Threads
@@ -456,7 +465,6 @@ namespace ProjectP2P
                         else return 3; //ExternIPv6
                         break;
                     default:
-                        MessageBox.Show("Unbekannter Fehler");
                         return 255; //Fehler
                         break;
                 }

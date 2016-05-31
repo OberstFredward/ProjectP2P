@@ -11,7 +11,7 @@
             <ColumnDefinition Width="250*"/>
             <ColumnDefinition Width="267*"/>
         </Grid.ColumnDefinitions>
-        <Button x:Name="btnSync" HorizontalAlignment="Left" Margin="172,270,0,0" VerticalAlignment="Top" Width="164" Height="35" Content="(text)" Background="Transparent" Click="btnSync_Click" Grid.ColumnSpan="2"/>
+        <Button x:Name="btnSync" HorizontalAlignment="Left" Margin="172,270,0,0" VerticalAlignment="Top" Width="164" Height="35" Content="Synchronisieren!" Background="Transparent" Click="btnSync_Click" Grid.ColumnSpan="2"/>
         <Button x:Name="btnSettings" HorizontalAlignment="Left" Margin="213,5,0,0" VerticalAlignment="Top" Width="40" Height="31" Background="Transparent" Grid.Column="1" Click="btnSettings_Click">
             <Image x:Name="image1" Height="21" Width="40" Source="pictures/settingsSmall.png"/>
         </Button>
