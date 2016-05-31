@@ -89,7 +89,8 @@ namespace ProjectP2P
                     foreach (var ip in properties.UnicastAddresses)
                     {
                         if (ip.Address.AddressFamily == AddressFamily.InterNetwork) localIPv4 = ip.Address.ToString();
-                        if (ip.Address.AddressFamily == AddressFamily.InterNetworkV6) localIPv6 = ip.Address.ToString();
+                        if (ip.Address.AddressFamily == AddressFamily.InterNetworkV6 && localIPv6 == "") localIPv6 = ip.Address.ToString();
+                        long test = ip.AddressPreferredLifetime; 
                     }
                 }
             }
