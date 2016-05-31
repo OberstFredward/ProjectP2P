@@ -185,8 +185,10 @@ namespace ProjectP2P
                 }
                 try
                 {
-                    if(profile.localIPv6 != "") listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv6), settings.ListenPort);
-                    else listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv4), settings.ListenPort);
+                    /*if(profile.localIPv6 != "") listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv6), settings.ListenPort);
+                    else listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv4), settings.ListenPort);*/  //<<<<----- Abhöhren auf IPv6 funktioniert noch nicht. Bisher nur auf v4
+                    if(profile.localIPv4 == null) Thread.Sleep(1000); //Eine Sekunde auf Profile.CheckInternetConnectionAndGetIPsTask warten damit die IPs gegeben sind
+                    listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv4), settings.ListenPort);
                     listener.Start();
                 }
                 catch
