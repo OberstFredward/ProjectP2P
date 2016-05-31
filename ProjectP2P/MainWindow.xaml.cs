@@ -260,9 +260,15 @@ namespace ProjectP2P
                     switch (result)
                     {
                         case MessageBoxResult.No:
-                            text = null;
-                            informationArray = null;
                             Dispatcher.Invoke(new Action(NewStartOrStopOfListener));
+                            try
+                            {
+                                throw new Exception(); //Abbruch der Methode
+                            }
+                            catch
+                            {
+                                Debug.WriteLine("Methode DataRecieve() wurde abgebrochen");
+                            }
                             break;
                         case MessageBoxResult.Yes:
                             partner = new PartnerProfile(informationArray[1], informationArray[2], informationArray[3]);
