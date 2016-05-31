@@ -46,7 +46,7 @@ namespace ProjectP2P
             }
             set
             {
-                if (value >= 49155 && value <= 65535)
+                if (value >= 49152 && value <= 65535)
                 {
                     _listenPort = value;
                     if (UpdateMainFormEvent != null) UpdateMainFormEvent(this,new EventArgs()); //Dieses Objekt wird übergeben mit neuen Standart EvenArgs
@@ -129,6 +129,7 @@ namespace ProjectP2P
                     }
                 }
                 Debug.WriteLine("settings.ini ausgelesen");
+                txt.Close();
                 return newSettings;
             }
             else

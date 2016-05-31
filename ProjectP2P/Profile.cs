@@ -31,7 +31,7 @@ namespace ProjectP2P
         //Events
         public static EventHandler UpdateMainFormEvent;
         //Main Thread Dispatcher
-        private Dispatcher MainThreadDispatcher;
+        private readonly Dispatcher MainThreadDispatcher;
         //-------------------Konstruktoren----------------------------
         public Profile(Dispatcher mainThreadDispatcher)
         {

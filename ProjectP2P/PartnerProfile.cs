@@ -29,21 +29,23 @@ namespace ProjectP2P
             {
                 this.Id = 0000; //ID "0" = Fehler
             }
-            if (MainWindow.CheckIpAdress(IPv4))
-            {
-                IsLocalIPv4 = false;
-            }
-            else
+            byte checkIPv4 = MainWindow.CheckIpAdress(IPv4);
+            if (checkIPv4 == 0)
             {
                 IsLocalIPv4 = true;
             }
-            if (MainWindow.CheckIpAdress(IPv6))
+            else if(checkIPv4 == 2)
             {
-                IsLocalIPv6 = false;
+                IsLocalIPv4 = false;
             }
-            else
+            byte checkIPv6 = MainWindow.CheckIpAdress(IPv6);
+            if (checkIPv6 == 1)
             {
                 IsLocalIPv6 = true;
+            }
+            else if(checkIPv6 == 3)
+            {
+                IsLocalIPv6 = false;
             }
         }
     }

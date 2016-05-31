@@ -50,7 +50,7 @@ namespace ProjectP2P
             try
             {
                 int port = Convert.ToInt32(txbPort.Text);
-                if (port >= 49155 && port <= 65535)
+                if (port >= 49152 && port <= 65535)
                 {
                     MainWindow.settings.ListenPort = Convert.ToInt32(txbPort.Text);
                     failed = false;
@@ -71,7 +71,7 @@ namespace ProjectP2P
                 StartStopListener(this,new EventArgs());
                 Close();
             }
-            else MessageBox.Show("Bitte geben Sie einen gültigen Port an\nBitte wählen Sie einen unreservierten Port.\nUnreserviert sind Port 49155 - 65535");
+            else MessageBox.Show("Bitte geben Sie einen gültigen Port an\nBitte wählen Sie einen unreservierten Port.\nUnreserviert sind Port 49152 - 65535");
         }
 
         private void CheckBoxEnableLocalOnly_Unchecked(object sender, RoutedEventArgs e)
