@@ -1,0 +1,65 @@
+﻿<!-- Einbindung der Code-Behind C# Datei && XMAL Namespaces -->
+<Window x:Class="ProjectP2P.MainWindow" 
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="P2P Client" Height="359.82" Width="528.635" ResizeMode="CanMinimize"
+        WindowStartupLocation="CenterScreen"
+        Icon="pictures/pirateBay.ico">
+    <!-- Übergeordneter Element-Container vom Typ 'Grid' -->
+    <Grid HorizontalAlignment="Left" Width="526">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250*"/>
+            <ColumnDefinition Width="267*"/>
+        </Grid.ColumnDefinitions>
+        <Button x:Name="btnSync" HorizontalAlignment="Left" Margin="172,270,0,0" VerticalAlignment="Top" Width="164" Height="35" Content="(text)" Background="Transparent" Click="btnSync_Click" Grid.ColumnSpan="2"/>
+        <Button x:Name="btnSettings" HorizontalAlignment="Left" Margin="213,5,0,0" VerticalAlignment="Top" Width="40" Height="31" Background="Transparent" Grid.Column="1" Click="btnSettings_Click">
+            <Image x:Name="image1" Height="21" Width="40" Source="pictures/settingsSmall.png"/>
+        </Button>
+        <Label x:Name="lblStatusText" Content="Status:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" FontWeight="Bold"/>
+        <Label x:Name="lblStatus" Content="(status)" HorizontalAlignment="Left" Margin="63,10,0,0" VerticalAlignment="Top" FontWeight="Bold" Grid.ColumnSpan="2" Width="275"/>
+        <Border BorderBrush="Black" BorderThickness="2" HorizontalAlignment="Left" Margin="10,41,0,76" Width="497" Grid.ColumnSpan="2">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="456*"/>
+                    <ColumnDefinition Width="37*"/>
+                </Grid.ColumnDefinitions>
+                <Button x:Name="btnFile" HorizontalAlignment="Left" VerticalAlignment="Top" Width="143" Height="109" Background="Transparent" Margin="294,59,0,0" Visibility="Hidden" ToolTip="Datei versenden">
+                    <Image x:Name="image" Height="100" Width="125" Source="pictures/File.png"/>
+                </Button>
+                <Button x:Name="btnText" HorizontalAlignment="Left" Margin="46,59,0,0" VerticalAlignment="Top" Width="143" Height="109" Background="Transparent" Click="btnText_Click" Visibility="Hidden" ToolTip="Text versenden">
+                    <Image x:Name="Text" Height="100" Width="100" Source="pictures/textFile.png"/>
+                </Button>
+                <Label x:Name="lblVerbindenText" Content="Verbinden" HorizontalAlignment="Left" Margin="36,3,0,0" VerticalAlignment="Top" Width="88" FontSize="16" FontWeight="Bold"/>
+                <Label x:Name="lblInfoText" Content="INFO" HorizontalAlignment="Left" Margin="294,8,0,0" VerticalAlignment="Top" Width="57" FontSize="16" FontWeight="Bold"/>
+                <Border x:Name="BorderVerbinden" BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="150" Margin="10,39,0,0" VerticalAlignment="Top" Width="152">
+                    <Grid x:Name="VerbindenGrid" Margin="-1,-9,1,9">
+                        <TextBox x:Name="txbVerbinden" HorizontalAlignment="Left" Height="22" Margin="10,36,0,0" TextWrapping="NoWrap" Text="127.0.0.1" VerticalAlignment="Top" Width="136" MaxLines="1" />
+                        <Label x:Name="lblIP" Content="IP Adresse" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+                    </Grid>
+                </Border>
+                <Border x:Name="BorderInfo" BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="150" Margin="175,39,0,0" VerticalAlignment="Top" Width="308" Grid.ColumnSpan="2">
+                    <Grid x:Name="InfoGrid" Margin="1,-9,-1,9">
+                        <Label x:Name="lblYourIpv4Text" Content="Öffentliche IPv4:" Margin="0,52,93,71"/>
+                        <Label x:Name="lblYourIdText" Content="Ihre ID:" Margin="48,97,46,26"/>
+                        <Label x:Name="lblPortText" Content="Port:" Margin="61,117,117,6"/>
+                        <Label x:Name="lblYourIpv6Text" Content="Öffentliche IPv6:" Margin="0,74,157,49"/>
+                        <TextBox x:Name="txbExternIpv4" HorizontalAlignment="Left" Height="23" Margin="94,57,0,0" TextWrapping="Wrap" Text="(ExternIpv4)" VerticalAlignment="Top" Width="117" IsReadOnly="True" BorderThickness="0"/>
+                        <TextBox x:Name="txbExternIpv6" HorizontalAlignment="Left" Height="23" Margin="94,79,0,0" TextWrapping="Wrap" Text="(ExternIpv6)" VerticalAlignment="Top" Width="208" IsReadOnly="True" BorderThickness="0"/>
+                        <TextBox x:Name="txbId" HorizontalAlignment="Left" Height="23" Margin="94,102,0,0" TextWrapping="Wrap" Text="(id)" VerticalAlignment="Top" Width="57" IsReadOnly="True" BorderThickness="0"/>
+                        <TextBox x:Name="txbPort" HorizontalAlignment="Left" Height="23" Margin="92,122,0,0" TextWrapping="Wrap" Text="(port)" VerticalAlignment="Top" Width="57" IsReadOnly="True" BorderThickness="0"/>
+                        <Label x:Name="lblLocalIpv4Text" Content="Lokale IPv4:" Margin="25,10,68,113"/>
+                        <Label x:Name="lblLocalIpv6Text" Content="Lokale IPv6:" Margin="25,32,68,91"/>
+                        <TextBox x:Name="txbLocalIpv4" HorizontalAlignment="Left" Height="23" Margin="94,15,0,0" TextWrapping="Wrap" Text="(LocalIpv4)" VerticalAlignment="Top" Width="208" IsReadOnly="True" BorderThickness="0"/>
+                        <TextBox x:Name="txbLocalIpv6" HorizontalAlignment="Left" Height="23" Margin="94,37,0,0" TextWrapping="Wrap" Text="(LocalIpv6)" VerticalAlignment="Top" Width="208" IsReadOnly="True" BorderThickness="0"/>
+                    </Grid>
+                </Border>
+
+
+
+            </Grid>
+        </Border>
+
+
+
+    </Grid>
+</Window>
