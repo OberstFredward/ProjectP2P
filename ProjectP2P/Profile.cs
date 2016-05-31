@@ -10,6 +10,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Forms;
+using System.Windows.Threading;
 
 namespace ProjectP2P
 {
@@ -17,19 +19,27 @@ namespace ProjectP2P
     {
         //------------------Eigenschaften----------------------------
         //Profile-Objekt Attribute -> Werden im Konstruktor festgelegt, nur auslesbar (readonly)
-        internal readonly string externIPv6;
-        internal readonly string externIPv4;
-        internal readonly string localIPv4;
-        internal readonly string localIPv6;
+        internal string externIPv6;
+        internal string externIPv4;
+        internal string localIPv4;
+        internal string localIPv6;
         internal readonly int id;
         //Hilfsvariabeln statisch
         internal static bool InternetConnection;
+        //Neue Threads
+        private static Task CheckInternetConnectionAndGetIPsTask;
+        //Events
+        public static EventHandler UpdateMainFormEvent;
+        //Main Thread Dispatcher
+        private Dispatcher MainThreadDispatcher;
         //-------------------Konstruktoren----------------------------
-        public Profile()
+        public Profile(Dispatcher mainThreadDispatcher)
         {
-            CheckInternetConnection();
-            GetLocalIPs(out localIPv6, out localIPv4);
-            GetExternalIPs(out externIPv6, out externIPv4);
+            externIPv4 = ""; //Falls keine Internetverbindung
+            externIPv6 = "";
+            this.MainThreadDispatcher = mainThreadDispatcher;
+            CheckInternetConnectionAndGetIPsTask = new Task(() => CheckInternetConnectionAndGetIPs(out localIPv6,out localIPv4,out externIPv6,out externIPv4,MainThreadDispatcher));
+            CheckInternetConnectionAndGetIPsTask.Start();
             CreateID(out id);
         }
         //---------------statische Methoden (zum Setzen der Attribute)-----------------------
@@ -37,34 +47,43 @@ namespace ProjectP2P
         {
             id = new Random().Next(1000, 9999);
         }
-        public static bool CheckInternetConnection()
+        private static void CheckInternetConnectionAndGetIPs(out string localIPv6, out string localIPv4, out string externIPv6, out string externIPv4,Dispatcher MainThreadDispatcher)
         {
             try
             {
                 using (Ping pingCheckIp = new Ping()) //'using' führt sofort die pingCheckIp.Dispose() Methode nach dem verlassen des Blockes aus -> Garbage Collector kann Speicherplatz wieder freimachen
                 {
-                    PingReply reply = pingCheckIp.Send("icanhazip.com", 1000, new byte[32], new PingOptions());
+                    PingReply reply = pingCheckIp.Send("google.com", 1000, new byte[32], new PingOptions());
                     if (reply.Status == IPStatus.Success) //Ist der PingStatus erfolgreich? 
                     {
                         InternetConnection = true;
-                        return true;
                     }
                     else
                     {
                         InternetConnection = false;
-                        return false;
                     }
                 }
             }
             catch
             {
                 InternetConnection = false;
-                return false;
             }
-        }
-
-        private static void GetExternalIPs(out string externIPv6, out string externIPv4)
-        {
+            //--------------------------getLocalIPs-----------------------
+            localIPv4 = "";
+            localIPv6 = "";
+            string hostName = Dns.GetHostName();
+            for (int i = 0; i < Dns.GetHostEntry(hostName).AddressList.Length; i++)
+            {
+                if (Dns.GetHostEntry(hostName).AddressList[i].IsIPv6LinkLocal == true)
+                {
+                    localIPv6 = Dns.GetHostEntry(hostName).AddressList[i].ToString();
+                }
+                else if (Dns.GetHostEntry(hostName).AddressList[i].IsIPv6LinkLocal == false)
+                {
+                    localIPv4 = Dns.GetHostEntry(hostName).AddressList[i].ToString();
+                }
+            }
+            //-------------------------------getExternalIPs-----------------------
             if (InternetConnection)
             {
                 try
@@ -89,29 +108,7 @@ namespace ProjectP2P
                 externIPv4 = "";
                 externIPv6 = "";
             }
-        }
-
-        private static void GetLocalIPs(out string localIPv6, out string localIPv4)
-        {
-            localIPv4 = "";
-            localIPv6 = "";
-            string hostName = Dns.GetHostName();
-            for (int i = 0; i < Dns.GetHostEntry(hostName).AddressList.Length; i++)
-            {
-                if (Dns.GetHostEntry(hostName).AddressList[i].IsIPv6LinkLocal == true)
-                {
-                    localIPv6 = Dns.GetHostEntry(hostName).AddressList[i].ToString();
-                }
-                else if (Dns.GetHostEntry(hostName).AddressList[i].IsIPv6LinkLocal == false)
-                {
-                    localIPv4 = Dns.GetHostEntry(hostName).AddressList[i].ToString();
-                }
-            }
-        }
-
-        public static bool CheckPortOpenness()
-        {
-            return false;
+            MainThreadDispatcher.Invoke(() => UpdateMainFormEvent(null, new EventArgs()));
         }
     }
 }

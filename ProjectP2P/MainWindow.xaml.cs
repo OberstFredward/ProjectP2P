@@ -19,6 +19,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using ThreadState = System.Threading.ThreadState;
 using Timer = System.Timers.Timer;
 
@@ -56,14 +57,20 @@ namespace ProjectP2P
         private string IpAdressInput;
         private bool RecievedAcknowledge;
         private bool IsTimeOut;
+        //Mutex public
         //--------------Konstruktor-------------------------
         public MainWindow()
         {
             Debug.WriteLine("Erstelle MainWindow Objekt");
             InitializeComponent();
+
+            lblStatus.Content = "Prüft Internetverbindung...";
+            lblStatus.Foreground = Brushes.Purple;
+
             settings = new Settings(Settings.GetSavedSettings());
-            profile = new Profile();
-            settings.UpdateMainFormEvent += UpdateMainForm; //Die Methode in den EventHandler hinzufügen
+            profile = new Profile(Dispatcher);
+            Profile.UpdateMainFormEvent += UpdateMainForm; //Die Methoden in den EventHandler hinzufügen
+            settings.UpdateMainFormEvent += UpdateMainForm; 
             encoding = new UTF8Encoding();
 
             synchronized = false; // <-- Anfänglich noch nicht Syncronisiert
@@ -71,7 +78,7 @@ namespace ProjectP2P
             if (settings.enableLocalOnly) FirstTimeDisableLocalOnly = true; //Für das Dialogfenster in SettwingsWindow beim erstmaligen Deaktivieren
             else FirstTimeDisableLocalOnly = false;
 
-            UpdateMainForm();
+            //UpdateMainForm(); --> Triggert nun der Profile.CheckInternetConnectionAndGetIPsTask  !!!
             NewStartOrStopOfListener();
         }
         //----------------EventMethoden--------------------------
@@ -102,6 +109,7 @@ namespace ProjectP2P
                 txbExternIpv4.Text = profile.externIPv4;
                 txbExternIpv6.Text = profile.externIPv6;
                 txbId.Text = Convert.ToString(profile.id);
+                
                 if (Profile.InternetConnection)
                 {
                     if (settings.enableLocalOnly)
@@ -344,10 +352,12 @@ namespace ProjectP2P
             Debug.WriteLine("Warte auf Reaktion des ListenerTask");
             try
             {
+
                 ListenerTask.Wait(cancellationWaiting);
                 Debug.WriteLine("Daten ehalten");
                 data = ListenerTask.Result;
-                DataRecieve();
+                if(data != null)DataRecieve();
+                else NewStartOrStopOfListener();
             }
             catch (AggregateException)
             {
@@ -358,6 +368,7 @@ namespace ProjectP2P
         private void CheckIfAcknowledgeRecieved(string IpAdress) //Für die Ausgabe (Threadübergreifend, daher als Parameter übergeben)
         {
             Timer timeout = new Timer(5000);
+            RecievedAcknowledge = false;
             IsTimeOut = false;
             timeout.Elapsed += delegate // Sogenannte anonyme Methode -> Hier sinnvoll da nur einmal verwendet
             {
