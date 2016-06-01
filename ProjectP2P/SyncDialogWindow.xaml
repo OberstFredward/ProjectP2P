@@ -1,0 +1,23 @@
+﻿<Window x:Class="ProjectP2P.SyncDialogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ProjectP2P"
+        mc:Ignorable="d"
+        Title="Synchronisationsanfrage" Height="264.861" Width="431.376" Icon="pictures/Sync.ico"
+        WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize" Topmost="True">
+    <Grid>
+        <Label x:Name="label" Content="Der User mit der ID&#xD;&#xA;" HorizontalAlignment="Left" Margin="10,7,0,0" VerticalAlignment="Top" Height="34" FontSize="18"/>
+        <Label x:Name="lblId" Content="0000" HorizontalAlignment="Left" Margin="173,7,0,0" VerticalAlignment="Top" Width="52" FontSize="18"/>
+        <Label x:Name="label_Copy" Content="möchte sich mit Ihnen synchronisieren!&#xD;&#xA;" HorizontalAlignment="Left" Margin="10,41,0,0" VerticalAlignment="Top" Height="30" FontSize="18"/>
+        <Image x:Name="image" HorizontalAlignment="Left" Height="140" Margin="241,86,0,0" VerticalAlignment="Top" Width="174" Source="pictures/emoji.png"/>
+        <Label x:Name="label_Copy1" Content="IPv6:&#xD;&#xA;" HorizontalAlignment="Left" Margin="10,72,0,0" VerticalAlignment="Top" Height="32" FontSize="18"/>
+        <Label x:Name="label_Copy2" Content="IPv4:&#xA;" HorizontalAlignment="Left" Margin="10,109,0,0" VerticalAlignment="Top" Height="31" FontSize="18"/>
+        <Label x:Name="lblIpv6" Content="(ipv6)" HorizontalAlignment="Left" Margin="57,72,0,0" VerticalAlignment="Top" Height="37" FontSize="18"/>
+        <Label x:Name="lblIpv4" Content="(ipv4)" HorizontalAlignment="Left" Margin="57,109,0,0" VerticalAlignment="Top" Height="37" FontSize="18"/>
+        <Button x:Name="btnAnnehmen" Content="Annehmen" HorizontalAlignment="Left" Margin="23,168,0,0" VerticalAlignment="Top" Width="82" Height="38" Click="btnAnnehmen_Click" FontSize="16"/>
+        <Button x:Name="btnAblehnen" Content="Ablehnen" HorizontalAlignment="Left" Margin="143,168,0,0" VerticalAlignment="Top" Width="82" Height="38" Click="btnAblehnen_Click" FontSize="16"/>
+
+    </Grid>
+</Window>

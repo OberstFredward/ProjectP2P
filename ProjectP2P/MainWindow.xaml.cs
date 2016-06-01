@@ -10,6 +10,7 @@ using System.Windows;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Messaging;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -25,9 +26,6 @@ using Timer = System.Timers.Timer;
 
 namespace ProjectP2P
 {
-    /// <summary>
-    /// Interaktionslogik für MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         //----------Eigenschaften---------------------
@@ -46,17 +44,21 @@ namespace ProjectP2P
         internal static Task CheckAcknowledgeTask;
         //internal static Task senderTask;
         //MainWindow-objekt Attribute
-        internal TcpClient sender;
+        internal TcpClient SenderTcpClient;
         internal TcpListenerAdapted listener;
         internal TcpClient data;
+        internal NetworkStream tcpStream;
         internal UTF8Encoding encoding;
         //private Objekt Attribute
         private CancellationToken cancellationWaiting;
         private SettingsWindow settingsWindow;
         private ChatWindow chatWindow;
+        private SyncDialogWindow syncDialogWindow;
         private string IpAdressInput;
         private bool RecievedAcknowledge;
+        private bool RecievedNotAcknowledge;
         private bool IsTimeOut;
+        private string[] SyncInfos;
         //--------------Konstruktor-------------------------
         public MainWindow()
         {
@@ -73,6 +75,7 @@ namespace ProjectP2P
             encoding = new UTF8Encoding();
 
             synchronized = false; // <-- Anfänglich noch nicht Syncronisiert
+            RecievedAcknowledge = false;
             RecievedAcknowledge = false;
             if (settings.enableLocalOnly)
                 FirstTimeDisableLocalOnly = true;
@@ -187,7 +190,7 @@ namespace ProjectP2P
                 {
                     /*if(profile.localIPv6 != "") listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv6), settings.ListenPort);
                     else listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv4), settings.ListenPort);*/  //<<<<----- Abhöhren auf IPv6 funktioniert noch nicht. Bisher nur auf v4
-                    if(profile.localIPv4 == null) Thread.Sleep(1000); //Eine Sekunde auf Profile.CheckInternetConnectionAndGetIPsTask warten damit die IPs gegeben sind
+                    if (profile.localIPv4 == null) Thread.Sleep(1000); //Eine Sekunde auf Profile.CheckInternetConnectionAndGetIPsTask warten damit die IPs gegeben sind
                     listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv4), settings.ListenPort);
                     listener.Start();
                 }
@@ -258,118 +261,104 @@ namespace ProjectP2P
             }
         }
 
+        private void SyncNo(object sender, EventArgs e)
+        {
+            syncDialogWindow.Close();
+            SendData("21|04", SyncInfos[1], false); //Nochma wegen IPv6 nachschlagen SyncInfos[1] -> IPV4
+            data = null;
+        }
+
+        private void SyncYes(object sender, EventArgs e)
+        {
+            syncDialogWindow.Close();
+            partner = new PartnerProfile(SyncInfos[0], SyncInfos[1], SyncInfos[2]);
+            if (partner.IsLocalIPv4 || partner.IsLocalIPv6)
+            {
+                SendData("06|" + profile.localIPv6 + "|" + profile.localIPv4 + "|" + profile.id + "|04", partner.IPv4,false); //06 = ACK -> acknowledge 
+            }
+            else
+            {
+                SendData("06|" + profile.externIPv6 + "|" + profile.externIPv4 + "|" + profile.id + "|04", partner.IPv4,false); //06 = ACK -> acknowledge 
+            }
+            synchronized = true;
+            UpdateMainForm();
+        }
+
         //------------------ObjektMethoden--------------------
-        private void DataRecieve()
+        private void DataRecieve() //RUFT NICHT DER MAINTHREAD AUF, SONDERN DER "DataRecieveWaiter"
         {
             StreamReader reader = new StreamReader(data.GetStream());
             string text = reader.ReadLine();
             string[] informationArray;
+            try
+            {
+                informationArray = text.Split('|');
+            }
+            catch
+            {
+                return;
+            }
 
-            if (text.Substring(0, 6) == "222201")
-            //22 = <SYN> 01 = <SOH> | 22 22 01 = <SYN><SYN><SOH> (222201)  Synchronisationsanfrage
+            if (informationArray[0] == "06") // ACK -> acknowledge / Bestätigung
+            {
+                if (informationArray[4] == "04") //Trailer stimmt
+                {
+                    partner = new PartnerProfile(informationArray[1], informationArray[2], informationArray[3]); //ACK sendet weiterhin auch die IPv4,IPv6 & Id des Gegenübers
+                    synchronized = true;
+                    RecievedAcknowledge = true;
+                    //Für die zeitlich abhängige Prüfung, ob das Acknowledge bereits angekommen ist.
+                    Dispatcher.Invoke(new Action(UpdateMainForm));
+                    return;
+                }
+            }
+            if (informationArray[0] == "21") // NAK -> Not Acknowledge
+            {
+                if (informationArray[1] == "04")
+                {
+                    MessageBox.Show("Die Synchronisation wurde abgelehnt.","Abgelehnt!",MessageBoxButton.OK,MessageBoxImage.Hand);
+                    RecievedNotAcknowledge = true;
+                    informationArray = null;
+                    text = null;
+                    return;
+                }
+            }
+
+
+            if (informationArray[0] == "222201") //22 = <SYN> 01 = <SOH> | 22 22 01 = <SYN><SYN><SOH> (222201)  Synchronisationsanfrage
             {
                 informationArray = text.Split('|');
                 //infromationArray[0] -> Präambel (siehe oben) | [1] -> IPv6 | [2] -> IPv4 | [3] -> ID | [4] -> EOT = 04 (End of Transmission)
                 if (informationArray[4] == "04") //Entspricht den Rahmenbedingungen
                 {
-                    MessageBoxResult result =
-                        MessageBox.Show(
-                            "Der User mit der ID: " + informationArray[3] +
-                            " möchte sich mit Ihnen synchronisieren.\nIPv6: " + informationArray[1] + "\nIPv4: " +
-                            informationArray[2] + "\n\nMöchten Sie die Anfrage annehmen?", "Synchronisationsanfrage",
-                            MessageBoxButton.YesNo, MessageBoxImage.Information);
-
-                    switch (result)
-                    {
-                        case MessageBoxResult.No:
-                            Dispatcher.Invoke(new Action(NewStartOrStopOfListener));
-                            text = null;
-                            informationArray = null;
-                            data = null;
-                            return; // Die Methode verlassen
-                        case MessageBoxResult.Yes:
-                            partner = new PartnerProfile(informationArray[1], informationArray[2], informationArray[3]);
-                            if (partner.IsLocalIPv4 || partner.IsLocalIPv6)
-                            {
-                                SendData("06|" + profile.localIPv6 + "|" + profile.localIPv4 + "|" + profile.id + "|04");
-                                //06 = ACK -> acknowledge
-                            }
-                            else
-                            {
-                                SendData("06|" + profile.externIPv6 + "|" + profile.externIPv4 + "|" + profile.id +
-                                         "|04");
-                            }
-                            synchronized = true;
-                            Dispatcher.Invoke(new Action(UpdateMainForm)); //DISPATCHER & INVOKE lernen!
-                            break;
-                    }
+                    Dispatcher.Invoke(() => syncDialogWindow = new SyncDialogWindow(informationArray));
+                    syncDialogWindow.Yes += SyncYes;
+                    syncDialogWindow.No += SyncNo;
+                    Dispatcher.Invoke(syncDialogWindow.Show);
+                    SyncInfos = new string[] { informationArray[1], informationArray[2], informationArray[3] };
                 }
             }
-            if (text.Substring(0, 2) == "06") // ACK -> acknowledge / Bestätigung
-            {
-                informationArray = text.Split('|');
-                if (informationArray[4] == "04") //Trailer stimmt
-                {
-                    partner = new PartnerProfile(informationArray[1], informationArray[2], informationArray[3]);
-                    synchronized = true;
-                    RecievedAcknowledge = true;
-                    //Für die zeitlich abhängige Prüfung, ob das Acknowledge bereits angekommen ist.
-                    Dispatcher.Invoke(new Action(UpdateMainForm));
-                }
-            }
-
         }
 
         private void SendSyncRequest()
         {
             byte IpAdressCheck = CheckIpAdress(txbVerbinden.Text);
-            if (settings.enableLocalOnly)
+            //if(txbVerbinden.Text == profile.localIPv4)
+            if (settings.enableLocalOnly && IpAdressCheck > 1)
             {
-                if (IpAdressCheck > 1)
-                {
-                    MessageBox.Show("Sie haben nur lokale Verbindungen aktiviert.\nBitte geben Sie eine lokale IP-Adresse an,\noder überarbeiten Sie Ihre Einstellungen", "Keine lokale IP", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
+                MessageBox.Show("Sie haben nur lokale Verbindungen aktiviert.\nBitte geben Sie eine lokale IP-Adresse an,\noder überarbeiten Sie Ihre Einstellungen", "Keine lokale IP", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
             if (IpAdressCheck >= 0 && IpAdressCheck <= 3) //0-3 gültige IPs, bei 255 -> Fehler
             {
-                sender = new TcpClient(AddressFamily.InterNetworkV6);
-                sender.Client.DualMode = true; // IPv6 & IPv4 erlauben --> Dualmode seid .NET 4.5
-                Stream tcpStream = null;
-                string IpAdressString = txbVerbinden.Text;
-                //Weil er unten bei der Übergabe meckert -> Aufgrund der späteren übernahme des Objekts eines anderen Threads
-                try
+                if (settings.enableLocalOnly)
                 {
-                    sender.Connect(IPAddress.Parse(txbVerbinden.Text), settings.ListenPort);
-                    tcpStream = sender.GetStream();
+                    SendData("222201|" + profile.localIPv6 + "|" + profile.localIPv4 + "|" + profile.id +
+                                          "|04", txbVerbinden.Text, true);
                 }
-                catch (Exception e)
+                else
                 {
-                    MessageBox.Show("Unbekannter Fehler:\n" + e, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                if (tcpStream != null)
-                {
-                    Byte[] bytePackage;
-                    if (settings.enableLocalOnly)
-                    {
-                        bytePackage =
-                            encoding.GetBytes("222201|" + profile.localIPv6 + "|" + profile.localIPv4 + "|" + profile.id +
-                                              "|04");
-                    }
-                    else
-                    {
-                        bytePackage =
-                            encoding.GetBytes("222201|" + profile.externIPv6 + "|" + profile.externIPv4 + "|" +
-                                              profile.id + "|04");
-                    }
-                    tcpStream.Write(bytePackage, 0, bytePackage.Length);
-                    sender.Close();
-                    lblStatus.Content = "Warte auf Antwort...";
-                    lblStatus.Foreground = Brushes.Red;
-                    NewStartOrStopOfListener();
-                    //Falls localOnly = true, muss der Listener ab diesem Zeitpunkt trd. gestartet werden um das ACK abzuhöhren
-                    CheckAcknowledgeTask = new Task(() => CheckIfAcknowledgeRecieved(IpAdressString));
-                    CheckAcknowledgeTask.Start();
+                    SendData("222201|" + profile.externIPv6 + "|" + profile.externIPv4 + "|" +
+                                          profile.id + "|04", txbVerbinden.Text, true);
                 }
             }
             else
@@ -387,9 +376,43 @@ namespace ProjectP2P
             }
         }
 
-        private void SendData(object data)
+        private void SendData(string text, string ip, bool SyncRequest) //string ip --> Zum unterscheiden der überladenen Methoden
         {
+            SenderTcpClient = new TcpClient(AddressFamily.InterNetworkV6);
+            SenderTcpClient.Client.DualMode = true; // IPv6 & IPv4 erlauben --> Dualmode seid .NET 4.5
+            tcpStream = null;
+            Byte[] bytePackage;
+            try
+            {
+                SenderTcpClient.Connect(IPAddress.Parse(ip), settings.ListenPort);
+                tcpStream = SenderTcpClient.GetStream();
 
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Unbekannter Fehler:\n" + e, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            if (tcpStream != null)
+            {
+                bytePackage = encoding.GetBytes(text);
+                tcpStream.Write(bytePackage, 0, bytePackage.Length);
+                SenderTcpClient.Close();
+
+                NewStartOrStopOfListener();
+                //Falls localOnly = true, muss der Listener ab diesem Zeitpunkt trd. gestartet werden um das ACK abzuhöhren
+                if (SyncRequest)
+                {
+                    lblStatus.Content = "Warte auf Antwort...";
+                    lblStatus.Foreground = Brushes.Red;
+                    CheckAcknowledgeTask = new Task(() => CheckIfAcknowledgeRecieved(ip));
+                    CheckAcknowledgeTask.Start();
+                }
+            }
+        }
+
+        private void SendData(string path, IPAddress ip) //IPAddress --> Zum unterscheiden der überladenen Methoden
+        {
+            //tcpFileStream = new FileStream(dataText,);
         }
 
         private void WaitForData()
@@ -413,7 +436,7 @@ namespace ProjectP2P
         private void CheckIfAcknowledgeRecieved(string IpAdress)
         //Für die Ausgabe (Threadübergreifend, daher als Parameter übergeben)
         {
-            Timer timeout = new Timer(5000);
+            Timer timeout = new Timer(20000);
             RecievedAcknowledge = false;
             IsTimeOut = false;
             timeout.Elapsed += delegate // Sogenannte anonyme Methode -> Hier sinnvoll da nur einmal verwendet
@@ -431,6 +454,12 @@ namespace ProjectP2P
                     Dispatcher.Invoke(UpdateMainForm);
                     Dispatcher.Invoke(NewStartOrStopOfListener); //Neustart des Listeneres
                 }
+                if (RecievedNotAcknowledge)
+                {
+                    RecievedNotAcknowledge = false;
+                    Dispatcher.Invoke(NewStartOrStopOfListener);
+                    return;
+                }
                 Thread.Sleep(100);
             }
             if (!RecievedAcknowledge)
@@ -440,6 +469,7 @@ namespace ProjectP2P
                     "Zeitüberschreitung", MessageBoxButton.OK, MessageBoxImage.Error);
                 timeout.Stop();
                 Dispatcher.Invoke(UpdateMainForm);
+                return;
             }
         }
 
@@ -456,7 +486,7 @@ namespace ProjectP2P
                         byte block1 = Convert.ToByte(ipv4Blocks[1]);
 
                         if (block0 == 10 || (block0 == 172 && (block1 >= 16 && block1 <= 31)) ||
-                            (block0 == 192 && block1 == 168)) //LocalPrüfung
+                            (block0 == 192 && block1 == 168) || block0 == 127) //LocalPrüfung
                         {
                             return 0; //LocalIPv4
                         }

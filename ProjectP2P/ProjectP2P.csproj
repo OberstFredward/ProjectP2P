@@ -66,6 +66,9 @@
     <Compile Include="SettingsWindow.xaml.cs">
       <DependentUpon>SettingsWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="SyncDialogWindow.xaml.cs">
+      <DependentUpon>SyncDialogWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="TcpListenerAdapted.cs" />
     <Page Include="ChatWindow.xaml">
       <SubType>Designer</SubType>
@@ -84,6 +87,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="SettingsWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="SyncDialogWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -135,6 +142,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="ExeIcon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="pictures\Sync.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="pictures\emoji.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
