@@ -4,7 +4,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="P2P Client" Height="359.82" Width="536.635" ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen"
-        Icon="pictures/pirateBay.ico">
+        Icon="pictures/pirateBay.ico" Closing="Window_Closing">
     <!-- Übergeordneter Element-Container vom Typ 'Grid' -->
     <Grid HorizontalAlignment="Left" Width="526">
         <Grid.ColumnDefinitions>

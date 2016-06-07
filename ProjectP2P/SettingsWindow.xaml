@@ -12,7 +12,7 @@
         <CheckBox x:Name="CheckBoxEnableUDP" Content="UDP Packete annehmen" HorizontalAlignment="Left" Margin="21,94,0,0" VerticalAlignment="Top"/>
         <CheckBox x:Name="CheckBoxListen" Content="Auf Synchronisation oder Packete horchen" HorizontalAlignment="Left" Margin="21,59,0,0" VerticalAlignment="Top"/>
         <Label x:Name="label" Content="Port" HorizontalAlignment="Left" Margin="21,156,0,0" VerticalAlignment="Top"/>
-        <TextBox x:Name="txbPort" HorizontalAlignment="Left" Height="19" Margin="58,160,0,0" TextWrapping="Wrap" Text="00000" VerticalAlignment="Top" Width="40" MaxLength="5"/>
+        <TextBox x:Name="txbPort" HorizontalAlignment="Left" Height="19" Margin="58,160,0,0" TextWrapping="Wrap" Text="00000" VerticalAlignment="Top" Width="51" MaxLength="5"/>
         <ComboBox x:Name="comboBoxProtocol" HorizontalAlignment="Left" Margin="153,124,0,0" VerticalAlignment="Top" Width="66">
             <ComboBoxItem Content="TCP"/>
             <ComboBoxItem Content="UDP"/>

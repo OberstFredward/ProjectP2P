@@ -10,8 +10,8 @@
     <Grid>
         <Label x:Name="label" Content="Der User mit der ID&#xD;&#xA;" HorizontalAlignment="Left" Margin="10,7,0,0" VerticalAlignment="Top" Height="34" FontSize="18"/>
         <Label x:Name="lblId" Content="0000" HorizontalAlignment="Left" Margin="173,7,0,0" VerticalAlignment="Top" Width="52" FontSize="18"/>
-        <Label x:Name="label_Copy" Content="möchte sich mit Ihnen synchronisieren!&#xD;&#xA;" HorizontalAlignment="Left" Margin="10,41,0,0" VerticalAlignment="Top" Height="30" FontSize="18"/>
-        <Image x:Name="image" HorizontalAlignment="Left" Height="140" Margin="241,86,0,0" VerticalAlignment="Top" Width="174" Source="pictures/emoji.png"/>
+        <Label x:Name="label_Copy" Content="möchte sich mit Ihnen synchronisieren!&#xD;&#xA;" HorizontalAlignment="Left" Margin="10,41,0,0" VerticalAlignment="Top" Height="40" FontSize="18"/>
+        <Image x:Name="image" HorizontalAlignment="Left" Height="106" Margin="264,120,0,0" VerticalAlignment="Top" Width="151" Source="pictures/emoji.png"/>
         <Label x:Name="label_Copy1" Content="IPv6:&#xD;&#xA;" HorizontalAlignment="Left" Margin="10,72,0,0" VerticalAlignment="Top" Height="32" FontSize="18"/>
         <Label x:Name="label_Copy2" Content="IPv4:&#xA;" HorizontalAlignment="Left" Margin="10,109,0,0" VerticalAlignment="Top" Height="31" FontSize="18"/>
         <Label x:Name="lblIpv6" Content="(ipv6)" HorizontalAlignment="Left" Margin="57,72,0,0" VerticalAlignment="Top" Height="37" FontSize="18"/>

@@ -78,7 +78,7 @@ namespace ProjectP2P
         {
             if (MainWindow.FirstTimeDisableLocalOnly)
             {
-                MessageBoxResult result = MessageBox.Show("Um das Empfangen außerhalb diese Netzwerk zu erlauben,\n muss der entsprechende Port im Router freigeschaltet sein.\n\nJetzt Prüfen ob das Empfangen auf Port "+Convert.ToString(MainWindow.settings.ListenPort)+" möglich ist?", "Warnung", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
+                MessageBoxResult result = MessageBox.Show("Um das Empfangen außerhalb diese Netzwerk zu ermöglichen,\nmuss der entsprechende Port ["+Convert.ToString(MainWindow.settings.ListenPort)+"]mit dem entsprechendem\nProtokoll im Router freigeschaltet sein.", "Warnung", MessageBoxButton.OK, MessageBoxImage.Warning);
                 switch (result)
                 {
                     case MessageBoxResult.Cancel:

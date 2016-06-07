@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Media;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -32,9 +33,11 @@ namespace ProjectP2P
             iPv6 = acknowledge[1];
             lblId.Content = id;
             lblIpv4.Content = iPv4;
-            lblId.Content = iPv6;
-
+            lblIpv6.Content = iPv6;
+            SystemSounds.Exclamation.Play();
         }
+
+
 
         private void btnAblehnen_Click(object sender, RoutedEventArgs e)
         {

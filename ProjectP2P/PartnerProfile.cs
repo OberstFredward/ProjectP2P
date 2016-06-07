@@ -12,15 +12,17 @@ namespace ProjectP2P
         //Eingschaften
         internal string IPv4{ get; set; }
         internal string IPv6{ get; set; }
+        internal string TcpClientIp { get; set; }
         internal int Id{ get; set; }
 
         internal bool IsLocalIPv4 { get; private set; }
         internal bool IsLocalIPv6 { get; private set; }
 
-        public PartnerProfile(string IPv6, string IPv4, string ID)
+        public PartnerProfile(string IPv6, string IPv4, string ID,string TcpClientIp)
         {
             this.IPv6 = IPv6;
             this.IPv4 = IPv4;
+            this.TcpClientIp = TcpClientIp;
             try
             {
                 this.Id = Convert.ToInt32(ID);

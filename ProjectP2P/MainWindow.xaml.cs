@@ -42,6 +42,7 @@ namespace ProjectP2P
         internal static Task DataRecieveWaiter;
         internal static Task<TcpClient> ListenerTask;
         internal static Task CheckAcknowledgeTask;
+        internal static Task DataSenderTask;
         //internal static Task senderTask;
         //MainWindow-objekt Attribute
         internal TcpClient SenderTcpClient;
@@ -65,8 +66,9 @@ namespace ProjectP2P
             Debug.WriteLine("Erstelle MainWindow Objekt");
             InitializeComponent();
 
-            lblStatus.Content = "Prüft Internetverbindung...";
+            lblStatus.Content = "Prüft Internetverbindung..."; //Bis zum ersten aufruf von UpdateMainForm
             lblStatus.Foreground = Brushes.Purple;
+            btnSync.IsEnabled = false;
 
             settings = new Settings(Settings.GetSavedSettings());
             profile = new Profile(Dispatcher);
@@ -94,6 +96,7 @@ namespace ProjectP2P
 
         private void UpdateMainForm(object sender, EventArgs eventArgs)
         {
+            btnSync.IsEnabled = true; //Während der Internetconnectionprüfung soll dieser Button deaktiviert sein, erst hier wird dann aktiviert
             if (!synchronized)
             {
                 //Sichtbarkeit des Anfangsfensters
@@ -182,22 +185,34 @@ namespace ProjectP2P
                 {
                     cancellationWaiting.ThrowIfCancellationRequested();
                     //Bricht das Warten in WaitForData bzw. DataRecieveWaiter ab
-                    Thread.Sleep(20);
-                    //Auf beendigung des DataRecieveWaiter warten [DataRecieve.Waiter.Wait() -> Macht den CancellationToken obsolete ... WHY :(]
+                    Thread.Sleep(20); //Auf beendigung des DataRecieveWaiter warten [DataRecieve.Waiter.Wait() -> Macht den CancellationToken obsolete ... WHY :(]
                     listener.Stop();
                 }
                 try
                 {
                     /*if(profile.localIPv6 != "") listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv6), settings.ListenPort);
-                    else listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv4), settings.ListenPort);*/  //<<<<----- Abhöhren auf IPv6 funktioniert noch nicht. Bisher nur auf v4
-                    if (profile.localIPv4 == null) Thread.Sleep(1000); //Eine Sekunde auf Profile.CheckInternetConnectionAndGetIPsTask warten damit die IPs gegeben sind
+                    else listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv4), settings.ListenPort);*/
+                    //<<<<----- Abhöhren auf IPv6 funktioniert noch nicht. Bisher nur auf v4 ------>>>>>>>
+                    if (profile.localIPv4 == null)
+                        Thread.Sleep(1000);
+                    //Eine Sekunde auf Profile.CheckInternetConnectionAndGetIPsTask warten damit die IPs gegeben sind
                     listener = new TcpListenerAdapted(IPAddress.Parse(profile.localIPv4), settings.ListenPort);
                     listener.Start();
                 }
-                catch
+                catch (FormatException)
                 {
                     MessageBox.Show(
-                        "Der angegebene Port ist blockiert. Automatischen abhöhren deaktiviert.\n\nBitte geben Sie einen offenen Port an und porbieren es erneut.",
+                            "Keine Internetverbidnung\n\nBitte stellen Sie eine gültige Verbindung her und versuchen Sie es erneut\nAtomatisches Abhöhren deaktiviert",
+                            "Keine Internetverbindung", MessageBoxButton.OK, MessageBoxImage.Error);
+                    settings.listen = false;
+                    UpdateMainForm();
+                    NewStartOrStopOfListener();
+                    settings.SaveSettings();
+                }
+                catch (Exception)
+                {
+                    MessageBox.Show(
+                        "Der angegebene Port ist blockiert. Automatischen Abhöhren deaktiviert.\n\nBitte geben Sie einen offenen Port an und porbieren es erneut.",
                         "Port blockiert", MessageBoxButton.OK, MessageBoxImage.Error);
                     settings.listen = false;
                     UpdateMainForm();
@@ -224,12 +239,17 @@ namespace ProjectP2P
             }
         }
 
+        private void btnText_Click()
+        {
+            btnText_Click(this, new RoutedEventArgs());
+        }
         private void btnText_Click(object sender, RoutedEventArgs e)
         {
             if (!ChatWindowIsOpened)
             {
                 chatWindow = new ChatWindow();
                 ChatWindowIsOpened = true;
+                chatWindow.SendText += SendChatText;
                 chatWindow.Show();
             }
         }
@@ -245,6 +265,9 @@ namespace ProjectP2P
                 partner = null;
                 synchronized = false;
                 if (ChatWindowIsOpened) chatWindow.Close();
+                if (SettingsWindowIsOpened) settingsWindow.Close();
+                StartDataSenderTask("27|04", SyncInfos[1], false); //27|4 -> ESC
+                MessageBox.Show("Der Partner reagiert nichtmehr.", "Fehler!", MessageBoxButton.OK, MessageBoxImage.Error);
                 UpdateMainForm();
                 NewStartOrStopOfListener();
             }
@@ -261,81 +284,113 @@ namespace ProjectP2P
             }
         }
 
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (synchronized) SendData("27|04", partner.IPv4, false); //EINZIGE STELLE an der Mainthread das senden Übernimmt
+        }
+
         private void SyncNo(object sender, EventArgs e)
         {
             syncDialogWindow.Close();
-            SendData("21|04", SyncInfos[1], false); //Nochma wegen IPv6 nachschlagen SyncInfos[1] -> IPV4
-            data = null;
+            StartDataSenderTask("21|04", SyncInfos[1], false); //Nochma wegen IPv6 nachschlagen SyncInfos[1] -> IPV4
         }
 
         private void SyncYes(object sender, EventArgs e)
         {
             syncDialogWindow.Close();
-            partner = new PartnerProfile(SyncInfos[0], SyncInfos[1], SyncInfos[2]);
+            partner = new PartnerProfile(SyncInfos[0], SyncInfos[1], SyncInfos[2], SyncInfos[3]);
             if (partner.IsLocalIPv4 || partner.IsLocalIPv6)
             {
-                SendData("06|" + profile.localIPv6 + "|" + profile.localIPv4 + "|" + profile.id + "|04", partner.IPv4,false); //06 = ACK -> acknowledge 
+                StartDataSenderTask("06|" + profile.localIPv6 + "|" + profile.localIPv4 + "|" + profile.id + "|04", partner.IPv4, false); //06 = ACK -> acknowledge 
             }
             else
             {
-                SendData("06|" + profile.externIPv6 + "|" + profile.externIPv4 + "|" + profile.id + "|04", partner.IPv4,false); //06 = ACK -> acknowledge 
+                StartDataSenderTask("06|" + profile.externIPv6 + "|" + profile.externIPv4 + "|" + profile.id + "|04", partner.IPv4, false); //06 = ACK -> acknowledge 
             }
             synchronized = true;
             UpdateMainForm();
         }
 
+        private void SendChatText(object sender, EventArgs<string> e)
+        {
+            StartDataSenderTask("02|" + e.Data + "|0304", partner.IPv4, false);
+        }
         //------------------ObjektMethoden--------------------
         private void DataRecieve() //RUFT NICHT DER MAINTHREAD AUF, SONDERN DER "DataRecieveWaiter"
         {
             StreamReader reader = new StreamReader(data.GetStream());
+            string TcpClientIp = ((IPEndPoint)data.Client.RemoteEndPoint).Address.ToString();
             string text = reader.ReadLine();
             string[] informationArray;
             try
             {
-                informationArray = text.Split('|');
+                informationArray = text.Split('|'); //infromationArray[0] -> Präambel (siehe oben) | [1] -> IPv6 | [2] -> IPv4 | [3] -> ID | [4] -> EOT = 04 (End of Transmission)
             }
             catch
             {
                 return;
             }
 
-            if (informationArray[0] == "06") // ACK -> acknowledge / Bestätigung
+            if (informationArray[0] == "06" && informationArray[4] == "04") // ACK -> acknowledge / Bestätigung
             {
-                if (informationArray[4] == "04") //Trailer stimmt
-                {
-                    partner = new PartnerProfile(informationArray[1], informationArray[2], informationArray[3]); //ACK sendet weiterhin auch die IPv4,IPv6 & Id des Gegenübers
-                    synchronized = true;
-                    RecievedAcknowledge = true;
-                    //Für die zeitlich abhängige Prüfung, ob das Acknowledge bereits angekommen ist.
-                    Dispatcher.Invoke(new Action(UpdateMainForm));
-                    return;
-                }
+                partner = new PartnerProfile(informationArray[1], informationArray[2], informationArray[3], TcpClientIp); //ACK sendet weiterhin auch die IPv4,IPv6 & Id des Gegenübers
+                synchronized = true;
+                RecievedAcknowledge = true;
+                //Für die zeitlich abhängige Prüfung, ob das Acknowledge bereits angekommen ist.
+                Dispatcher.Invoke(new Action(UpdateMainForm));
+                informationArray = null;
+                text = null;
+                data = null;
+                return;
             }
-            if (informationArray[0] == "21") // NAK -> Not Acknowledge
+
+            if (informationArray[0] == "21" && informationArray[1] == "04") // NAK -> Not Acknowledge
             {
-                if (informationArray[1] == "04")
-                {
-                    MessageBox.Show("Die Synchronisation wurde abgelehnt.","Abgelehnt!",MessageBoxButton.OK,MessageBoxImage.Hand);
-                    RecievedNotAcknowledge = true;
-                    informationArray = null;
-                    text = null;
-                    return;
-                }
+                RecievedNotAcknowledge = true;
+                MessageBox.Show("Die Synchronisation wurde abgelehnt.", "Abgelehnt!", MessageBoxButton.OK, MessageBoxImage.Hand);
+                informationArray = null;
+                text = null;
+                data = null;
+                return;
+            }
+
+            if (informationArray[0] == "222201" && informationArray[4] == "04") //22 = <SYN> 01 = <SOH> | 22 22 01 = <SYN><SYN><SOH> (222201)  Synchronisationsanfrage
+            {
+                Dispatcher.Invoke(() => syncDialogWindow = new SyncDialogWindow(informationArray));
+                syncDialogWindow.Yes += SyncYes;
+                syncDialogWindow.No += SyncNo;
+                Dispatcher.Invoke(syncDialogWindow.Show);
+                SyncInfos = new string[] { informationArray[1], informationArray[2], informationArray[3], TcpClientIp };
+                informationArray = null;
+                text = null;
+                data = null;
+                return;
             }
 
 
-            if (informationArray[0] == "222201") //22 = <SYN> 01 = <SOH> | 22 22 01 = <SYN><SYN><SOH> (222201)  Synchronisationsanfrage
+            if (informationArray[0] == "27" && informationArray[1] == "04" && synchronized == true && partner.TcpClientIp == TcpClientIp) //ESC --> Escape / Abbruch der Synchronisation
             {
-                informationArray = text.Split('|');
-                //infromationArray[0] -> Präambel (siehe oben) | [1] -> IPv6 | [2] -> IPv4 | [3] -> ID | [4] -> EOT = 04 (End of Transmission)
-                if (informationArray[4] == "04") //Entspricht den Rahmenbedingungen
+                MessageBox.Show("Dein Partner hat die aktuelle Sitzung beendet.", "Sitzung beendet",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                synchronized = false;
+                if (ChatWindowIsOpened) chatWindow.Close();
+                Dispatcher.Invoke(UpdateMainForm);
+                Dispatcher.Invoke(NewStartOrStopOfListener);
+                informationArray = null;
+                text = null;
+                data = null;
+                return;
+            }
+
+            if (informationArray[0] == "02" && informationArray[2] == "0304" && synchronized == true && partner.TcpClientIp == TcpClientIp) //02 -> STX | 03 -> ETX / Text
+            {
+                if (!ChatWindowIsOpened)
                 {
-                    Dispatcher.Invoke(() => syncDialogWindow = new SyncDialogWindow(informationArray));
-                    syncDialogWindow.Yes += SyncYes;
-                    syncDialogWindow.No += SyncNo;
-                    Dispatcher.Invoke(syncDialogWindow.Show);
-                    SyncInfos = new string[] { informationArray[1], informationArray[2], informationArray[3] };
+                    Dispatcher.Invoke(btnText_Click); //Ruft das Klick-Event btnText auf (öffnet Chat Fenster)
                 }
+                Dispatcher.Invoke(() => chatWindow.RecieveText(informationArray[1]));
+                Dispatcher.Invoke(NewStartOrStopOfListener); // Auf neue Informationen horchen
+                Dispatcher.Invoke(UpdateMainForm); //Damit die Statusanzeige weiterhin die aktuelle Lage anzeigt
             }
         }
 
@@ -352,12 +407,12 @@ namespace ProjectP2P
             {
                 if (settings.enableLocalOnly)
                 {
-                    SendData("222201|" + profile.localIPv6 + "|" + profile.localIPv4 + "|" + profile.id +
+                    StartDataSenderTask("222201|" + profile.localIPv6 + "|" + profile.localIPv4 + "|" + profile.id +
                                           "|04", txbVerbinden.Text, true);
                 }
                 else
                 {
-                    SendData("222201|" + profile.externIPv6 + "|" + profile.externIPv4 + "|" +
+                    StartDataSenderTask("222201|" + profile.externIPv6 + "|" + profile.externIPv4 + "|" +
                                           profile.id + "|04", txbVerbinden.Text, true);
                 }
             }
@@ -376,7 +431,21 @@ namespace ProjectP2P
             }
         }
 
-        private void SendData(string text, string ip, bool SyncRequest) //string ip --> Zum unterscheiden der überladenen Methoden
+        private void StartDataSenderTask(string text, string ip, bool SyncRequest)
+        {
+            Debug.WriteLine("Wartet auf beendigung des DataSenderTask");
+            lblStatus.Content = "Warte auf beendigung des Sendens...";
+            lblStatus.Foreground = Brushes.Red;
+            if (DataSenderTask != null) DataSenderTask.Wait(); //<-- Auf beendigung der aktuellen Aufgabe warten
+
+            DataSenderTask = new Task(() => SendData(text, ip, SyncRequest));
+
+            lblStatus.Content = "Verbindungsaufbau...";
+            lblStatus.Foreground = Brushes.Red;
+
+            DataSenderTask.Start();
+        }
+        private void SendData(string text, string ip, bool SyncRequest) //string ip --> Zum unterscheiden der überladenen Methoden || WIRD NICHT VOM MAIN THREAD AUSGEFÜHRT
         {
             SenderTcpClient = new TcpClient(AddressFamily.InterNetworkV6);
             SenderTcpClient.Client.DualMode = true; // IPv6 & IPv4 erlauben --> Dualmode seid .NET 4.5
@@ -386,11 +455,13 @@ namespace ProjectP2P
             {
                 SenderTcpClient.Connect(IPAddress.Parse(ip), settings.ListenPort);
                 tcpStream = SenderTcpClient.GetStream();
-
             }
             catch (Exception e)
             {
                 MessageBox.Show("Unbekannter Fehler:\n" + e, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                synchronized = false;
+                Dispatcher.Invoke(UpdateMainForm);
+                return;
             }
             if (tcpStream != null)
             {
@@ -402,10 +473,18 @@ namespace ProjectP2P
                 //Falls localOnly = true, muss der Listener ab diesem Zeitpunkt trd. gestartet werden um das ACK abzuhöhren
                 if (SyncRequest)
                 {
-                    lblStatus.Content = "Warte auf Antwort...";
-                    lblStatus.Foreground = Brushes.Red;
+                    Dispatcher.Invoke(delegate //anonyme Methode für aktuallisierung des Statuslabels
+                    {
+                        lblStatus.Content = "Warte auf Antwort...";
+                        lblStatus.Foreground = Brushes.Red;
+                    });
+
                     CheckAcknowledgeTask = new Task(() => CheckIfAcknowledgeRecieved(ip));
                     CheckAcknowledgeTask.Start();
+                }
+                else
+                {
+                    Dispatcher.Invoke(UpdateMainForm);
                 }
             }
         }
@@ -438,6 +517,7 @@ namespace ProjectP2P
         {
             Timer timeout = new Timer(20000);
             RecievedAcknowledge = false;
+            RecievedNotAcknowledge = false;
             IsTimeOut = false;
             timeout.Elapsed += delegate // Sogenannte anonyme Methode -> Hier sinnvoll da nur einmal verwendet
             {
@@ -453,10 +533,13 @@ namespace ProjectP2P
                     timeout.Stop();
                     Dispatcher.Invoke(UpdateMainForm);
                     Dispatcher.Invoke(NewStartOrStopOfListener); //Neustart des Listeneres
+                    return;
                 }
                 if (RecievedNotAcknowledge)
                 {
                     RecievedNotAcknowledge = false;
+                    timeout.Stop();
+                    Dispatcher.Invoke(UpdateMainForm);
                     Dispatcher.Invoke(NewStartOrStopOfListener);
                     return;
                 }
