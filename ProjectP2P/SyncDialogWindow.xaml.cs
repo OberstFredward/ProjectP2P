@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Media;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,6 +10,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Forms;
+using System.Windows.Forms.VisualStyles;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -23,11 +27,13 @@ namespace ProjectP2P
         private string id, iPv4, iPv6;
         public event EventHandler Yes;
         public event EventHandler No;
-
+        public static bool YesClicked;
 
         public SyncDialogWindow(string[] acknowledge)
         {
             InitializeComponent();
+            YesClicked = false;
+            MainWindow.timeout.Start();
             id = acknowledge[3];
             iPv4 = acknowledge[2];
             iPv6 = acknowledge[1];
@@ -37,16 +43,25 @@ namespace ProjectP2P
             SystemSounds.Exclamation.Play();
         }
 
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (MainWindow.timeout.Enabled && !YesClicked)
+            {
+                MainWindow.timeout.Stop();
+                No(this, new EventArgs());
+            }
+        }
 
 
         private void btnAblehnen_Click(object sender, RoutedEventArgs e)
         {
-            No(this,new EventArgs());
+            Close();
         }
 
         private void btnAnnehmen_Click(object sender, RoutedEventArgs e)
         {
-            Yes(this,new EventArgs());
+            YesClicked = true;
+            Yes(this, new EventArgs());
         }
     }
 }

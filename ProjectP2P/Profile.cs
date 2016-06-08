@@ -83,7 +83,7 @@ namespace ProjectP2P
             NetworkInterface[] adapters = NetworkInterface.GetAllNetworkInterfaces();
             foreach (NetworkInterface adapter in adapters)
             {
-                if (adapter.OperationalStatus == OperationalStatus.Up && adapter.NetworkInterfaceType == NetworkInterfaceType.Ethernet || adapter.NetworkInterfaceType == NetworkInterfaceType.Wireless80211) //Ethernet (LAN) oder WLAN
+                if (adapter.OperationalStatus == OperationalStatus.Up && (adapter.NetworkInterfaceType == NetworkInterfaceType.Ethernet || adapter.NetworkInterfaceType == NetworkInterfaceType.Wireless80211)) //Ethernet (LAN) oder WLAN
                 {
                     IPInterfaceProperties properties = adapter.GetIPProperties();
                     foreach (var ip in properties.UnicastAddresses)

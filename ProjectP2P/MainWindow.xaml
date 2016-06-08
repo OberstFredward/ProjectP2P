@@ -44,13 +44,13 @@
                         <Label x:Name="lblPortText" Content="Port:" Margin="61,117,117,6"/>
                         <Label x:Name="lblYourIpv6Text" Content="Öffentliche IPv6:" Margin="0,74,157,49"/>
                         <TextBox x:Name="txbExternIpv4" HorizontalAlignment="Left" Height="23" Margin="94,57,0,0" TextWrapping="Wrap" Text="(ExternIpv4)" VerticalAlignment="Top" Width="117" IsReadOnly="True" BorderThickness="0"/>
-                        <TextBox x:Name="txbExternIpv6" HorizontalAlignment="Left" Height="23" Margin="94,79,0,0" TextWrapping="Wrap" Text="(ExternIpv6)" VerticalAlignment="Top" Width="208" IsReadOnly="True" BorderThickness="0"/>
+                        <TextBox x:Name="txbExternIpv6" HorizontalAlignment="Left" Height="23" Margin="94,79,0,0" TextWrapping="Wrap" Text="(ExternIpv6)" VerticalAlignment="Top" Width="218" IsReadOnly="True" BorderThickness="0"/>
                         <TextBox x:Name="txbId" HorizontalAlignment="Left" Height="23" Margin="94,102,0,0" TextWrapping="Wrap" Text="(id)" VerticalAlignment="Top" Width="57" IsReadOnly="True" BorderThickness="0"/>
                         <TextBox x:Name="txbPort" HorizontalAlignment="Left" Height="23" Margin="92,122,0,0" TextWrapping="Wrap" Text="(port)" VerticalAlignment="Top" Width="57" IsReadOnly="True" BorderThickness="0"/>
                         <Label x:Name="lblLocalIpv4Text" Content="Lokale IPv4:" Margin="25,10,68,113"/>
                         <Label x:Name="lblLocalIpv6Text" Content="Lokale IPv6:" Margin="25,32,68,91"/>
                         <TextBox x:Name="txbLocalIpv4" HorizontalAlignment="Left" Height="23" Margin="94,15,0,0" TextWrapping="Wrap" Text="(LocalIpv4)" VerticalAlignment="Top" Width="141" IsReadOnly="True" BorderThickness="0"/>
-                        <TextBox x:Name="txbLocalIpv6" HorizontalAlignment="Left" Height="23" Margin="94,37,0,0" TextWrapping="Wrap" Text="(LocalIpv6)" VerticalAlignment="Top" Width="211" IsReadOnly="True" BorderThickness="0"/>
+                        <TextBox x:Name="txbLocalIpv6" HorizontalAlignment="Left" Height="23" Margin="94,37,0,0" TextWrapping="Wrap" Text="(LocalIpv6)" VerticalAlignment="Top" Width="218" IsReadOnly="True" BorderThickness="0"/>
                     </Grid>
                 </Border>
 

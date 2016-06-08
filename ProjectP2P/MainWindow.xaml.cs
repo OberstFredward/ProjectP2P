@@ -38,6 +38,7 @@ namespace ProjectP2P
         internal static bool ChatWindowIsOpened;
         internal static bool FirstTimeDisableLocalOnly;
         internal static bool synchronized;
+        internal static Timer timeout;
         //Zusätzliche Threads/Tasks statisch
         internal static Task DataRecieveWaiter;
         internal static Task<TcpClient> ListenerTask;
@@ -258,6 +259,9 @@ namespace ProjectP2P
         {
             if (!synchronized)
             {
+                if(SettingsWindowIsOpened) settingsWindow.Close();
+                btnSettings.IsEnabled = false;
+                btnSync.IsEnabled = false;
                 SendSyncRequest();
             }
             else
@@ -291,7 +295,7 @@ namespace ProjectP2P
 
         private void SyncNo(object sender, EventArgs e)
         {
-            syncDialogWindow.Close();
+            
             StartDataSenderTask("21|04", SyncInfos[1], false); //Nochma wegen IPv6 nachschlagen SyncInfos[1] -> IPV4
         }
 
@@ -356,6 +360,16 @@ namespace ProjectP2P
 
             if (informationArray[0] == "222201" && informationArray[4] == "04") //22 = <SYN> 01 = <SOH> | 22 22 01 = <SYN><SYN><SOH> (222201)  Synchronisationsanfrage
             {
+                timeout = new Timer(20000);
+                timeout.AutoReset = false;
+                timeout.Elapsed += delegate
+                {
+                    timeout.Stop();
+                    Dispatcher.InvokeAsync(syncDialogWindow.Close);
+                    NewStartOrStopOfListener();
+                    MessageBox.Show("Zeitüberschreitung der Anfrage", "Zeitüberschreitung", MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                };
                 Dispatcher.Invoke(() => syncDialogWindow = new SyncDialogWindow(informationArray));
                 syncDialogWindow.Yes += SyncYes;
                 syncDialogWindow.No += SyncNo;
@@ -400,7 +414,8 @@ namespace ProjectP2P
             //if(txbVerbinden.Text == profile.localIPv4)
             if (settings.enableLocalOnly && IpAdressCheck > 1)
             {
-                MessageBox.Show("Sie haben nur lokale Verbindungen aktiviert.\nBitte geben Sie eine lokale IP-Adresse an,\noder überarbeiten Sie Ihre Einstellungen", "Keine lokale IP", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Sie haben nur lokale Verbindungen aktiviert.\nBitte geben Sie eine lokale IP-Adresse an,\noder überarbeiten Sie Ihre Einstellungen.", "Keine lokale IP", MessageBoxButton.OK, MessageBoxImage.Warning);
+                UpdateMainForm();
                 return;
             }
             if (IpAdressCheck >= 0 && IpAdressCheck <= 3) //0-3 gültige IPs, bei 255 -> Fehler
@@ -456,11 +471,21 @@ namespace ProjectP2P
                 SenderTcpClient.Connect(IPAddress.Parse(ip), settings.ListenPort);
                 tcpStream = SenderTcpClient.GetStream();
             }
+            catch (SocketException)
+            {
+                MessageBox.Show(
+                    "Ein Verbindunsgversuch ist fehlgeschlagen,\nda die Gegenstelle nach einer bestimmten Zeitspanne\nnicht reagiert hat.\n\nÜberprüfen Sie die IP und Ihre Einstellungen.",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Dispatcher.Invoke(UpdateMainForm);
+                return;
+            }
             catch (Exception e)
             {
-                MessageBox.Show("Unbekannter Fehler:\n" + e, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                synchronized = false;
+                MessageBox.Show(
+                        "Kritischer Fehler:\n" + e,
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Dispatcher.Invoke(UpdateMainForm);
+                Dispatcher.Invoke(NewStartOrStopOfListener);
                 return;
             }
             if (tcpStream != null)
@@ -515,13 +540,14 @@ namespace ProjectP2P
         private void CheckIfAcknowledgeRecieved(string IpAdress)
         //Für die Ausgabe (Threadübergreifend, daher als Parameter übergeben)
         {
-            Timer timeout = new Timer(20000);
+            timeout = new Timer(19999);
             RecievedAcknowledge = false;
             RecievedNotAcknowledge = false;
             IsTimeOut = false;
             timeout.Elapsed += delegate // Sogenannte anonyme Methode -> Hier sinnvoll da nur einmal verwendet
             {
                 IsTimeOut = true;
+                timeout.Stop();
             };
             timeout.Start();
             while (!IsTimeOut)
@@ -529,7 +555,7 @@ namespace ProjectP2P
                 if (RecievedAcknowledge)
                 {
                     synchronized = true;
-                    RecievedAcknowledge = false;
+                    RecievedAcknowledge = true;
                     timeout.Stop();
                     Dispatcher.Invoke(UpdateMainForm);
                     Dispatcher.Invoke(NewStartOrStopOfListener); //Neustart des Listeneres
@@ -537,7 +563,7 @@ namespace ProjectP2P
                 }
                 if (RecievedNotAcknowledge)
                 {
-                    RecievedNotAcknowledge = false;
+                    RecievedNotAcknowledge = true;
                     timeout.Stop();
                     Dispatcher.Invoke(UpdateMainForm);
                     Dispatcher.Invoke(NewStartOrStopOfListener);
