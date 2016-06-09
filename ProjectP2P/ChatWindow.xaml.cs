@@ -40,8 +40,9 @@ namespace ProjectP2P
             {
                 SendText(this, new EventArgs<string>(txbEingabe.Text));
                 if(txbChat.Text == "") txbChat.Text += "<Du> " + txbEingabe.Text;
-                else txbChat.Text += "\r\n<" + "<Du> " + "> " + txbEingabe.Text;
+                else txbChat.Text += "\r\n<Du> " + txbEingabe.Text;
                 txbEingabe.Text = "";
+                txbChat.ScrollToEnd();
             }
         }
 
@@ -49,6 +50,7 @@ namespace ProjectP2P
         {
             if(txbChat.Text == "") txbChat.Text += "<" + MainWindow.partner.IPv4 + "> " + text;
             else txbChat.Text += "\r\n<" + MainWindow.partner.IPv4 + "> " + text;
+            txbChat.ScrollToEnd();
         }
 
         private void txbEingabe_KeyDown(object sender, KeyEventArgs e) //Wenn EINGABE gedrückt wird - Event

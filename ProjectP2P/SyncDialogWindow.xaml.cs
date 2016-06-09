@@ -47,7 +47,6 @@ namespace ProjectP2P
         {
             if (MainWindow.timeout.Enabled && !YesClicked)
             {
-                MainWindow.timeout.Stop();
                 No(this, new EventArgs());
             }
         }

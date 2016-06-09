@@ -270,8 +270,14 @@ namespace ProjectP2P
                 synchronized = false;
                 if (ChatWindowIsOpened) chatWindow.Close();
                 if (SettingsWindowIsOpened) settingsWindow.Close();
-                StartDataSenderTask("27|04", SyncInfos[1], false); //27|4 -> ESC
-                MessageBox.Show("Der Partner reagiert nichtmehr.", "Fehler!", MessageBoxButton.OK, MessageBoxImage.Error);
+                try
+                {
+                    StartDataSenderTask("27|04", SyncInfos[1], false); //27|4 -> ESC
+                }
+                catch (Exception)
+                {
+                    MessageBox.Show("Der Partner reagiert nichtmehr.", "Fehler!", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
                 UpdateMainForm();
                 NewStartOrStopOfListener();
             }
@@ -376,6 +382,9 @@ namespace ProjectP2P
                 Dispatcher.Invoke(syncDialogWindow.Show);
                 SyncInfos = new string[] { informationArray[1], informationArray[2], informationArray[3], TcpClientIp };
                 informationArray = null;
+                timeout.Stop();
+                timeout.Enabled = false;
+                //timeout = null;
                 text = null;
                 data = null;
                 return;
@@ -387,7 +396,7 @@ namespace ProjectP2P
                 MessageBox.Show("Dein Partner hat die aktuelle Sitzung beendet.", "Sitzung beendet",
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 synchronized = false;
-                if (ChatWindowIsOpened) chatWindow.Close();
+                if (ChatWindowIsOpened) Dispatcher.Invoke(chatWindow.Close);
                 Dispatcher.Invoke(UpdateMainForm);
                 Dispatcher.Invoke(NewStartOrStopOfListener);
                 informationArray = null;
