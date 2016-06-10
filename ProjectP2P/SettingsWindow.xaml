@@ -10,7 +10,7 @@
         WindowStartupLocation="CenterScreen" Icon="pictures/settingsSmall.png" Closed="Window_Closed" Topmost="True">
     <Grid>
         <CheckBox x:Name="CheckBoxEnableUDP" Content="UDP Packete annehmen" HorizontalAlignment="Left" Margin="21,94,0,0" VerticalAlignment="Top"/>
-        <CheckBox x:Name="CheckBoxListen" Content="Auf Synchronisation oder Packete horchen" HorizontalAlignment="Left" Margin="21,59,0,0" VerticalAlignment="Top"/>
+        <CheckBox x:Name="CheckBoxListen" Content="Auf Synchronisation oder Packete horchen" HorizontalAlignment="Left" Margin="21,65,0,0" VerticalAlignment="Top"/>
         <Label x:Name="label" Content="Port" HorizontalAlignment="Left" Margin="21,156,0,0" VerticalAlignment="Top"/>
         <TextBox x:Name="txbPort" HorizontalAlignment="Left" Height="19" Margin="58,160,0,0" TextWrapping="Wrap" Text="00000" VerticalAlignment="Top" Width="51" MaxLength="5"/>
         <ComboBox x:Name="comboBoxProtocol" HorizontalAlignment="Left" Margin="153,124,0,0" VerticalAlignment="Top" Width="66">
@@ -21,8 +21,8 @@
         <Button x:Name="btnSpeichern" Content="Speichern" HorizontalAlignment="Left" Margin="108,244,0,0" VerticalAlignment="Top" Width="75" Background="Transparent" Click="btnSpeichern_Click"/>
         <Label x:Name="lblPfadText" Content="Downloadpfad&#xD;&#xA;" HorizontalAlignment="Left" Margin="21,194,0,0" VerticalAlignment="Top" Height="26"/>
         <TextBox x:Name="txbPath" HorizontalAlignment="Left" Height="23" Margin="119,198,0,0" TextWrapping="NoWrap" Text="(pfad)" VerticalAlignment="Top" Width="141" IsReadOnly="True" MaxLines="1" PreviewMouseDown="txbPath_PreviewMouseDown" />
-        <Label x:Name="label2" Content="Alpha-Build 0.5.2" HorizontalAlignment="Left" Margin="196,258,0,0" VerticalAlignment="Top" FontSize="9" Width="88"/>
-        <RadioButton x:Name="rbtnLocal" Content="Nur lokale Verbindungen" HorizontalAlignment="Left" Margin="21,17,0,0" VerticalAlignment="Top"/>
+        <Label x:Name="label2" Content="Alpha-Build 0.5.3" HorizontalAlignment="Left" Margin="196,258,0,0" VerticalAlignment="Top" FontSize="9" Width="88"/>
+        <RadioButton x:Name="rbtnLocal" Content="Nur lokale Verbindungen" HorizontalAlignment="Left" Margin="21,17,0,0" VerticalAlignment="Top" Unchecked="CheckBoxEnableLocalOnly_Unchecked"/>
         <RadioButton x:Name="rbtnExtern" Content="Nur externe Verbindungen" HorizontalAlignment="Left" Margin="21,37,0,0" VerticalAlignment="Top"/>
     </Grid>
 </Window>

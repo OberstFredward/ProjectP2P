@@ -87,7 +87,7 @@ namespace ProjectP2P
                         rbtnLocal.IsChecked = true;
                         break;
                     case MessageBoxResult.OK:
-                        //Portforwarding Überprüfung! ÄNDERN
+                        //Portforwarding Überprüfung! Zukünfige Version (Serverbasierende Überprüfung)
                         break;
                 }
                 MainWindow.FirstTimeDisableLocalOnly = false; //Wenn Portforwarding Prüfung erfolgreich!!! ÄNDERN

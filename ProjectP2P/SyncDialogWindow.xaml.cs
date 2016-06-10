@@ -47,6 +47,8 @@ namespace ProjectP2P
         {
             if (MainWindow.timeout.Enabled && !YesClicked)
             {
+                MainWindow.timeout.Stop();
+                MainWindow.timeout.EndInit();
                 No(this, new EventArgs());
             }
         }
@@ -59,6 +61,8 @@ namespace ProjectP2P
 
         private void btnAnnehmen_Click(object sender, RoutedEventArgs e)
         {
+            MainWindow.timeout.Stop();
+            MainWindow.timeout.EndInit();
             YesClicked = true;
             Yes(this, new EventArgs());
         }

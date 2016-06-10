@@ -37,6 +37,8 @@ namespace ProjectP2P
         internal static bool SettingsWindowIsOpened;
         internal static bool ChatWindowIsOpened;
         internal static bool FirstTimeDisableLocalOnly;
+        internal static bool TryToConnect = false;
+        internal static bool ConnectionCancelt = false;
         internal static bool synchronized;
         internal static Timer timeout;
         //Zusätzliche Threads/Tasks statisch
@@ -98,6 +100,7 @@ namespace ProjectP2P
         private void UpdateMainForm(object sender, EventArgs eventArgs)
         {
             btnSync.IsEnabled = true; //Während der Internetconnectionprüfung soll dieser Button deaktiviert sein, erst hier wird dann aktiviert
+            TryToConnect = false; //Nur false, wenn gerade ein Verbindungsaufbau versucht wird [wird bötigt zum vorzeitigen Abbrechen]
             if (!synchronized)
             {
                 //Sichtbarkeit des Anfangsfensters
@@ -139,11 +142,11 @@ namespace ProjectP2P
                         lblStatus.Foreground = Brushes.Green;
                         if (settings.listen)
                         {
-                            lblStatus.Content = "Bereit";
+                            lblStatus.Content = "Bereit - nur Extern";
                         }
                         else
                         {
-                            lblStatus.Content = "Abhören deaktiviert";
+                            lblStatus.Content = "Abhören deaktiviert - nur Extern";
                         }
                     }
                 }
@@ -257,19 +260,21 @@ namespace ProjectP2P
 
         private void btnSync_Click(object sender, RoutedEventArgs e)
         {
-            if (!synchronized)
+            if (!synchronized && !TryToConnect)
             {
-                if(SettingsWindowIsOpened) settingsWindow.Close();
+                TryToConnect = true;
+                if (SettingsWindowIsOpened) settingsWindow.Close();
                 btnSettings.IsEnabled = false;
-                btnSync.IsEnabled = false;
                 SendSyncRequest();
+                btnSync.Content = "Abbrechen";
             }
-            else
+            else if (synchronized && !TryToConnect)
             {
                 partner = null;
                 synchronized = false;
                 if (ChatWindowIsOpened) chatWindow.Close();
                 if (SettingsWindowIsOpened) settingsWindow.Close();
+                UpdateMainForm();
                 try
                 {
                     StartDataSenderTask("27|04", SyncInfos[1], false); //27|4 -> ESC
@@ -278,6 +283,15 @@ namespace ProjectP2P
                 {
                     MessageBox.Show("Der Partner reagiert nichtmehr.", "Fehler!", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+                NewStartOrStopOfListener();
+            }
+            else if (!synchronized && TryToConnect) //Verbindungsaufbau abbrechen
+            {
+                listener.Server.Close();
+                ConnectionCancelt = true;
+                SyncInfos = null;
+                data = null;
+                TryToConnect = false;
                 UpdateMainForm();
                 NewStartOrStopOfListener();
             }
@@ -303,6 +317,7 @@ namespace ProjectP2P
         {
             StartDataSenderTask("21|04", SyncInfos[1], false); //Nochma wegen IPv6 nachschlagen SyncInfos[1] -> IPV4
             NewStartOrStopOfListener();
+            UpdateMainForm();
         }
 
         private void SyncYes(object sender, EventArgs e)
@@ -370,20 +385,24 @@ namespace ProjectP2P
                 timeout.AutoReset = false;
                 timeout.Elapsed += delegate
                 {
-                    timeout.Stop();
                     Dispatcher.InvokeAsync(syncDialogWindow.Close);
                     NewStartOrStopOfListener();
                     MessageBox.Show("Zeitüberschreitung der Anfrage", "Zeitüberschreitung", MessageBoxButton.OK,
                     MessageBoxImage.Warning);
+                    Dispatcher.Invoke(UpdateMainForm);
                 };
                 Dispatcher.Invoke(() => syncDialogWindow = new SyncDialogWindow(informationArray));
                 syncDialogWindow.Yes += SyncYes;
                 syncDialogWindow.No += SyncNo;
+                Dispatcher.Invoke(delegate
+                {
+                    btnSync.IsEnabled = false;
+                    btnSettings.IsEnabled = false;
+                });
                 Dispatcher.Invoke(syncDialogWindow.Show);
                 SyncInfos = new string[] { informationArray[1], informationArray[2], informationArray[3], TcpClientIp };
                 informationArray = null;
-                timeout.Stop();
-                timeout.Enabled = false;
+                timeout.Start();
                 //timeout = null;
                 text = null;
                 data = null;
@@ -463,6 +482,7 @@ namespace ProjectP2P
 
         private void StartDataSenderTask(string text, string ip, bool SyncRequest)
         {
+            ConnectionCancelt = false;
             Debug.WriteLine("Wartet auf beendigung des DataSenderTask");
             lblStatus.Content = "Warte auf beendigung des Sendens...";
             lblStatus.Foreground = Brushes.Red;
@@ -488,16 +508,19 @@ namespace ProjectP2P
             }
             catch (SocketException)
             {
-                MessageBox.Show(
+                if (!ConnectionCancelt) //Nicht Verbindungsversuch abbgebrochen -> Fehler wegen Zeitüberschreitung
+                {
+                    MessageBox.Show(
                     "Ein Verbindunsgversuch ist fehlgeschlagen,\nda die Gegenstelle nach einer bestimmten Zeitspanne\nnicht reagiert hat.\n\nÜberprüfen Sie die IP und Ihre Einstellungen.",
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                Dispatcher.Invoke(UpdateMainForm);
+                    Dispatcher.Invoke(UpdateMainForm);
+                }
                 return;
             }
             catch (Exception e)
             {
                 MessageBox.Show(
-                        "Kritischer Fehler:\n" + e,
+                        "Kritischer Fehler:\n" + e.Message,
                         "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Dispatcher.Invoke(UpdateMainForm);
                 Dispatcher.Invoke(NewStartOrStopOfListener);

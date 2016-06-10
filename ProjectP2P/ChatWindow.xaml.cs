@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Media;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
@@ -19,6 +20,8 @@ namespace ProjectP2P
     {
         public event EventHandler<EventArgs<string>> SendText;
         private static string SavedText;
+        private SoundPlayer beepSound;
+
         public ChatWindow()
         {
             InitializeComponent();
@@ -26,6 +29,7 @@ namespace ProjectP2P
             txbEingabe.Text = "";
             txbChat.Text = SavedText;
             MainWindow.ChatWindowIsOpened = true;
+            beepSound = new SoundPlayer(Properties.Resources.beep);
         }
 
         private void WpfChat_Closed(object sender, EventArgs e) //speichere in statischem Feld (Keine dauerhafte speicherung - der Text wird nur solange gehalten wie der P2P Client läuft)
@@ -51,6 +55,9 @@ namespace ProjectP2P
             if(txbChat.Text == "") txbChat.Text += "<" + MainWindow.partner.IPv4 + "> " + text;
             else txbChat.Text += "\r\n<" + MainWindow.partner.IPv4 + "> " + text;
             txbChat.ScrollToEnd();
+            WindowState = WindowState.Normal; //Minimierung aufheben
+            this.Activate(); //In den Vordergrund drängen
+            beepSound.Play();
         }
 
         private void txbEingabe_KeyDown(object sender, KeyEventArgs e) //Wenn EINGABE gedrückt wird - Event
