@@ -29,7 +29,8 @@ namespace ProjectP2P
             Debug.WriteLine("Erstelle SettingsWindow Objekt mit übergebenen MainWindow.settings");
             InitializeComponent();
             //geladene Einstellungen anzeigen
-            CheckBoxEnableLocalOnly.IsChecked = MainWindow.settings.enableLocalOnly;
+            if (MainWindow.settings.enableLocalOnly) rbtnLocal.IsChecked = true;
+            else if (!MainWindow.settings.enableLocalOnly) rbtnExtern.IsChecked = true;
             CheckBoxEnableUDP.IsChecked = MainWindow.settings.enableUDP;
             CheckBoxListen.IsChecked = MainWindow.settings.listen;
             if (MainWindow.settings.SendingProtocol == 0) comboBoxProtocol.SelectedItem = comboBoxProtocol.Items[0];
@@ -41,7 +42,8 @@ namespace ProjectP2P
         private void btnSpeichern_Click(object sender, RoutedEventArgs e)
         {
             bool failed = true;
-            MainWindow.settings.enableLocalOnly = CheckBoxEnableLocalOnly.IsChecked.Value;
+            if (rbtnLocal.IsChecked.Value) MainWindow.settings.enableLocalOnly = true;
+            else if (rbtnExtern.IsChecked.Value) MainWindow.settings.enableLocalOnly = false;
             MainWindow.settings.enableUDP = CheckBoxEnableUDP.IsChecked.Value;
             MainWindow.settings.listen = CheckBoxListen.IsChecked.Value;
             MainWindow.settings.path = txbPath.Text;
@@ -82,7 +84,7 @@ namespace ProjectP2P
                 switch (result)
                 {
                     case MessageBoxResult.Cancel:
-                        CheckBoxEnableLocalOnly.IsChecked = true;
+                        rbtnLocal.IsChecked = true;
                         break;
                     case MessageBoxResult.OK:
                         //Portforwarding Überprüfung! ÄNDERN

@@ -61,7 +61,7 @@ namespace ProjectP2P
             enableUDP = false;
             _sendingProtocol = 0;
             listen = true;
-            _listenPort = 49155;
+            _listenPort = 50000;
             path = Environment.CurrentDirectory + @"\Downloads";
             if (!Directory.Exists(Environment.CurrentDirectory + @"\Downloads"))
                 di = Directory.CreateDirectory(path);

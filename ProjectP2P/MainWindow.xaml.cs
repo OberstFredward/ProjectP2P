@@ -301,8 +301,8 @@ namespace ProjectP2P
 
         private void SyncNo(object sender, EventArgs e)
         {
-            
             StartDataSenderTask("21|04", SyncInfos[1], false); //Nochma wegen IPv6 nachschlagen SyncInfos[1] -> IPV4
+            NewStartOrStopOfListener();
         }
 
         private void SyncYes(object sender, EventArgs e)
@@ -393,12 +393,12 @@ namespace ProjectP2P
 
             if (informationArray[0] == "27" && informationArray[1] == "04" && synchronized == true && partner.TcpClientIp == TcpClientIp) //ESC --> Escape / Abbruch der Synchronisation
             {
-                MessageBox.Show("Dein Partner hat die aktuelle Sitzung beendet.", "Sitzung beendet",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
                 synchronized = false;
                 if (ChatWindowIsOpened) Dispatcher.Invoke(chatWindow.Close);
                 Dispatcher.Invoke(UpdateMainForm);
                 Dispatcher.Invoke(NewStartOrStopOfListener);
+                MessageBox.Show("Dein Partner hat die aktuelle Sitzung beendet.", "Sitzung beendet",
+                MessageBoxButton.OK, MessageBoxImage.Information);
                 informationArray = null;
                 text = null;
                 data = null;
@@ -421,9 +421,15 @@ namespace ProjectP2P
         {
             byte IpAdressCheck = CheckIpAdress(txbVerbinden.Text);
             //if(txbVerbinden.Text == profile.localIPv4)
-            if (settings.enableLocalOnly && IpAdressCheck > 1)
+            if (settings.enableLocalOnly && IpAdressCheck > 1) //Check auf lokale IPs
             {
                 MessageBox.Show("Sie haben nur lokale Verbindungen aktiviert.\nBitte geben Sie eine lokale IP-Adresse an,\noder überarbeiten Sie Ihre Einstellungen.", "Keine lokale IP", MessageBoxButton.OK, MessageBoxImage.Warning);
+                UpdateMainForm();
+                return;
+            }
+            else if (!settings.enableLocalOnly && IpAdressCheck < 2)
+            {
+                MessageBox.Show("Sie haben nur externe Verbindungen aktiviert.\nBitte geben Sie eine externe IP-Adresse an,\noder überarbeiten Sie Ihre Einstellungen.", "Keine externe IP", MessageBoxButton.OK, MessageBoxImage.Warning);
                 UpdateMainForm();
                 return;
             }
