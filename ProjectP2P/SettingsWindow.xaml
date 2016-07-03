@@ -21,7 +21,7 @@
         <Button x:Name="btnSpeichern" Content="Speichern" HorizontalAlignment="Left" Margin="108,244,0,0" VerticalAlignment="Top" Width="75" Background="Transparent" Click="btnSpeichern_Click"/>
         <Label x:Name="lblPfadText" Content="Downloadpfad&#xD;&#xA;" HorizontalAlignment="Left" Margin="21,194,0,0" VerticalAlignment="Top" Height="26"/>
         <TextBox x:Name="txbPath" HorizontalAlignment="Left" Height="23" Margin="119,198,0,0" TextWrapping="NoWrap" Text="(pfad)" VerticalAlignment="Top" Width="141" IsReadOnly="True" MaxLines="1" PreviewMouseDown="txbPath_PreviewMouseDown" />
-        <Label x:Name="label2" Content="Alpha-Build 0.5.3" HorizontalAlignment="Left" Margin="196,258,0,0" VerticalAlignment="Top" FontSize="9" Width="88"/>
+        <Label x:Name="label2" Content="Alpha-Build 0.6.0" HorizontalAlignment="Left" Margin="196,258,0,0" VerticalAlignment="Top" FontSize="9" Width="88"/>
         <RadioButton x:Name="rbtnLocal" Content="Nur lokale Verbindungen" HorizontalAlignment="Left" Margin="21,17,0,0" VerticalAlignment="Top" Unchecked="CheckBoxEnableLocalOnly_Unchecked"/>
         <RadioButton x:Name="rbtnExtern" Content="Nur externe Verbindungen" HorizontalAlignment="Left" Margin="21,37,0,0" VerticalAlignment="Top"/>
     </Grid>

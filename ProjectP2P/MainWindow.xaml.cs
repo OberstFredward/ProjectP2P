@@ -21,6 +21,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using Microsoft.Win32;
 using ThreadState = System.Threading.ThreadState;
 using Timer = System.Timers.Timer;
 
@@ -46,6 +47,7 @@ namespace ProjectP2P
         internal static Task<TcpClient> ListenerTask;
         internal static Task CheckAcknowledgeTask;
         internal static Task DataSenderTask;
+        internal static Task FileRecieveTask;
         //internal static Task senderTask;
         //MainWindow-objekt Attribute
         internal TcpClient SenderTcpClient;
@@ -58,7 +60,9 @@ namespace ProjectP2P
         private SettingsWindow settingsWindow;
         private ChatWindow chatWindow;
         private SyncDialogWindow syncDialogWindow;
+        private OpenFileDialog Filedialog;
         private string IpAdressInput;
+        private string FileName;
         private bool RecievedAcknowledge;
         private bool RecievedNotAcknowledge;
         private bool IsTimeOut;
@@ -167,7 +171,9 @@ namespace ProjectP2P
                 BorderVerbinden.Visibility = Visibility.Hidden;
                 btnText.Visibility = Visibility.Visible;
                 btnFile.Visibility = Visibility.Visible;
-                btnSettings.IsEnabled = false;
+                btnFile.IsEnabled = true;
+                btnText.IsEnabled = true;
+                if (ChatWindowIsOpened) chatWindow.btnSend.IsEnabled = true;
                 if (SettingsWindowIsOpened) settingsWindow.Close();
                 btnSync.Content = "Synchronisation beenden";
 
@@ -226,7 +232,7 @@ namespace ProjectP2P
                 if (settings.listen) //Doppelte Überprüfung, falls Error wichtig
                 {
                     ListenerTask = listener.AcceptTcpClientAsync();
-                    DataRecieveWaiter = new Task(WaitForData); //Neuinitiallisierung notwendig
+                    DataRecieveWaiter = new Task(() => WaitForData(true)); //Neuinitiallisierung notwendig
                     DataRecieveWaiter.Start();
                     Debug.WriteLine("Listening + Waiting wurde neu initiallisiert und neu gestartet");
                 }
@@ -257,6 +263,18 @@ namespace ProjectP2P
                 chatWindow.Show();
             }
         }
+        private void BtnFile_OnClick(object sender, RoutedEventArgs e)
+        {
+            Filedialog = new OpenFileDialog();
+            Filedialog.Multiselect = false;
+            Filedialog.FileOk += delegate //Event wenn der User auf ok klickt
+            {
+                FileName = Filedialog.SafeFileName;
+                SendData("28|" + FileName + "|04", partner.IPv4, false,true);
+            };
+            Filedialog.ShowDialog();
+        }
+
 
         private void btnSync_Click(object sender, RoutedEventArgs e)
         {
@@ -277,9 +295,9 @@ namespace ProjectP2P
                 UpdateMainForm();
                 try
                 {
-                    StartDataSenderTask("27|04", SyncInfos[1], false); //27|4 -> ESC
+                    StartDataSenderTask("27|04", SyncInfos[1], false,true); //27|4 -> ESC
                 }
-                catch (Exception)
+                catch (Exception) //TODO: Senden schlägt nach Abbruch fehl, warum? Eventuell muss der Listener neu gestartet werden? Wenn der User auch die Anfrage stellt.
                 {
                     MessageBox.Show("Der Partner reagiert nichtmehr.", "Fehler!", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
@@ -310,12 +328,12 @@ namespace ProjectP2P
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (synchronized) SendData("27|04", partner.IPv4, false); //EINZIGE STELLE an der Mainthread das senden Übernimmt
+            if (synchronized) SendData("27|04", partner.IPv4, false,true); //EINZIGE STELLE an der Mainthread das senden Übernimmt
         }
 
         private void SyncNo(object sender, EventArgs e)
         {
-            StartDataSenderTask("21|04", SyncInfos[1], false); //Nochma wegen IPv6 nachschlagen SyncInfos[1] -> IPV4
+            StartDataSenderTask("21|04", SyncInfos[1], false,true); //Nochma wegen IPv6 nachschlagen SyncInfos[1] -> IPV4
             NewStartOrStopOfListener();
             UpdateMainForm();
         }
@@ -326,11 +344,11 @@ namespace ProjectP2P
             partner = new PartnerProfile(SyncInfos[0], SyncInfos[1], SyncInfos[2], SyncInfos[3]);
             if (partner.IsLocalIPv4 || partner.IsLocalIPv6)
             {
-                StartDataSenderTask("06|" + profile.localIPv6 + "|" + profile.localIPv4 + "|" + profile.id + "|04", partner.IPv4, false); //06 = ACK -> acknowledge 
+                StartDataSenderTask("06|" + profile.localIPv6 + "|" + profile.localIPv4 + "|" + profile.id + "|04", partner.IPv4, false,true); //06 = ACK -> acknowledge 
             }
             else
             {
-                StartDataSenderTask("06|" + profile.externIPv6 + "|" + profile.externIPv4 + "|" + profile.id + "|04", partner.IPv4, false); //06 = ACK -> acknowledge 
+                StartDataSenderTask("06|" + profile.externIPv6 + "|" + profile.externIPv4 + "|" + profile.id + "|04", partner.IPv4, false,true); //06 = ACK -> acknowledge 
             }
             synchronized = true;
             UpdateMainForm();
@@ -338,7 +356,7 @@ namespace ProjectP2P
 
         private void SendChatText(object sender, EventArgs<string> e)
         {
-            StartDataSenderTask("02|" + e.Data + "|0304", partner.IPv4, false);
+            StartDataSenderTask("02|" + e.Data + "|0304", partner.IPv4, false,true);
         }
         //------------------ObjektMethoden--------------------
         private void DataRecieve() //RUFT NICHT DER MAINTHREAD AUF, SONDERN DER "DataRecieveWaiter"
@@ -433,9 +451,64 @@ namespace ProjectP2P
                 Dispatcher.Invoke(() => chatWindow.RecieveText(informationArray[1]));
                 Dispatcher.Invoke(NewStartOrStopOfListener); // Auf neue Informationen horchen
                 Dispatcher.Invoke(UpdateMainForm); //Damit die Statusanzeige weiterhin die aktuelle Lage anzeigt
+                return;
+            }
+            if (informationArray[0] == "28" && informationArray[2] == "04") //28 -> FS (FileSend) >>Anfrage<<
+            {
+                FileName = informationArray[1];
+                FileRecieveTask = new Task(RecieveFile);
+                FileRecieveTask.Start();
+                listener.Stop();
+                cancellationWaiting.ThrowIfCancellationRequested();
+                return;
+            }
+            if (informationArray[0] == "2806" && informationArray[1] == "04") //FileSend ACK | Für die das Bestätigen, das der Empfänger bereit ist die Daten entgegenzunehmen
+            {
+                StartDataSenderTask(Filedialog.InitialDirectory + Filedialog.FileName, partner.IPv4, false, false);
+                return;
             }
         }
 
+        private void RecieveFile() //FÜR DEN FILERECIEVE TASK
+        {
+            data = null;
+            tcpStream = null;
+            if (!listener.Active) listener.Start();
+            SendData("2806|04",partner.IPv4,false,false); //Bereit die Daten anzunehmen
+            Dispatcher.Invoke(delegate
+            {
+                lblStatus.Content = "Empfange Datei...";
+                lblStatus.Foreground = Brushes.Orange;
+                btnFile.IsEnabled = false;
+                btnText.IsEnabled = false;
+                if (ChatWindowIsOpened) chatWindow.btnSend.IsEnabled = false;
+            });
+            try
+            {
+                if (!listener.Active) listener.Start();
+                data = listener.AcceptTcpClient();
+                tcpStream = data.GetStream();
+                byte[] RecData = new byte[1024];
+                int RecBytes;
+                FileStream fs = new FileStream(settings.path + "\\" + FileName, FileMode.OpenOrCreate, FileAccess.Write);
+                while ((RecBytes = tcpStream.Read(RecData, 0, RecData.Length)) > 0)
+                {
+                    fs.Write(RecData, 0, RecBytes);
+                    Debug.WriteLine("Teildatei angenommen");
+                }
+                Debug.WriteLine("Datei fertig versendet");
+                fs.Close();
+                tcpStream.Close();
+                data.Close();
+                listener.Stop();
+                Dispatcher.Invoke(NewStartOrStopOfListener);
+                Dispatcher.Invoke(UpdateMainForm);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Error", e.Message, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
         private void SendSyncRequest()
         {
             byte IpAdressCheck = CheckIpAdress(txbVerbinden.Text);
@@ -457,12 +530,12 @@ namespace ProjectP2P
                 if (settings.enableLocalOnly)
                 {
                     StartDataSenderTask("222201|" + profile.localIPv6 + "|" + profile.localIPv4 + "|" + profile.id +
-                                          "|04", txbVerbinden.Text, true);
+                                          "|04", txbVerbinden.Text, true,true);
                 }
                 else
                 {
                     StartDataSenderTask("222201|" + profile.externIPv6 + "|" + profile.externIPv4 + "|" +
-                                          profile.id + "|04", txbVerbinden.Text, true);
+                                          profile.id + "|04", txbVerbinden.Text, true,true);
                 }
             }
             else
@@ -480,22 +553,24 @@ namespace ProjectP2P
             }
         }
 
-        private void StartDataSenderTask(string text, string ip, bool SyncRequest)
+        private void StartDataSenderTask(string textOrPath, string ip, bool SyncRequest,bool TextOrFile)
         {
             ConnectionCancelt = false;
-            Debug.WriteLine("Wartet auf beendigung des DataSenderTask");
-            lblStatus.Content = "Warte auf beendigung des Sendens...";
-            lblStatus.Foreground = Brushes.Red;
-            if (DataSenderTask != null) DataSenderTask.Wait(); //<-- Auf beendigung der aktuellen Aufgabe warten
 
-            DataSenderTask = new Task(() => SendData(text, ip, SyncRequest));
+            if(TextOrFile)
+            DataSenderTask = new Task(() => SendData(textOrPath, ip, SyncRequest,true));
+            else
+            DataSenderTask = new Task(() => SendData(textOrPath,IPAddress.Parse(ip))); //Überladene Methode nur für das Senden von Daten verwenden
 
-            lblStatus.Content = "Verbindungsaufbau...";
-            lblStatus.Foreground = Brushes.Red;
+            Dispatcher.Invoke(delegate
+            {
+                lblStatus.Content = "Verbindungsaufbau...";
+                lblStatus.Foreground = Brushes.Red;
+            });
 
             DataSenderTask.Start();
         }
-        private void SendData(string text, string ip, bool SyncRequest) //string ip --> Zum unterscheiden der überladenen Methoden || WIRD NICHT VOM MAIN THREAD AUSGEFÜHRT
+        private void SendData(string text, string ip, bool SyncRequest,bool newStartOfListener) //SendData für Text || WIRD NICHT VOM MAIN THREAD AUSGEFÜHRT
         {
             SenderTcpClient = new TcpClient(AddressFamily.InterNetworkV6);
             SenderTcpClient.Client.DualMode = true; // IPv6 & IPv4 erlauben --> Dualmode seid .NET 4.5
@@ -532,8 +607,7 @@ namespace ProjectP2P
                 tcpStream.Write(bytePackage, 0, bytePackage.Length);
                 SenderTcpClient.Close();
 
-                NewStartOrStopOfListener();
-                //Falls localOnly = true, muss der Listener ab diesem Zeitpunkt trd. gestartet werden um das ACK abzuhöhren
+                if(newStartOfListener) NewStartOrStopOfListener();
                 if (SyncRequest)
                 {
                     Dispatcher.Invoke(delegate //anonyme Methode für aktuallisierung des Statuslabels
@@ -552,12 +626,71 @@ namespace ProjectP2P
             }
         }
 
-        private void SendData(string path, IPAddress ip) //IPAddress --> Zum unterscheiden der überladenen Methoden
+        private void SendData(string path, IPAddress ip) //SendData für Daten || WIRD NICHT VOM MAIN THREAD AUSGEFÜHRT /// Sendung in jeweiligen 1kb Packeten
         {
-            //tcpFileStream = new FileStream(dataText,);
+            SenderTcpClient = new TcpClient(AddressFamily.InterNetworkV6);
+            SenderTcpClient.Client.DualMode = true; // IPv6 & IPv4 erlauben --> Dualmode seid .NET 4.5
+            FileStream file = null;
+            tcpStream = null;
+            try
+            {
+                file = new FileStream(path, FileMode.Open,FileAccess.Read);
+                SenderTcpClient.Connect(ip, settings.ListenPort);
+                tcpStream = SenderTcpClient.GetStream();
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message, "Error", MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            }
+            //----------Deklarieren wichtiger Variabeln---------
+            byte[] SendingBuffer = null;
+            int NoOfPackets = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(file.Length) / 1024.0)); // 1kb (1024b) Packete || Ceiling -> Aufrunden
+            int TotalLength = (int) file.Length;
+            int CurrentPacketLength;
+            int counter = 0;
+            //----Senden der Packete-----
+            try
+            {
+                Dispatcher.Invoke(delegate
+                {
+                    lblStatus.Content = "Sende Datei......";
+                    lblStatus.Foreground = Brushes.Orange;
+                    btnFile.IsEnabled = false;
+                    btnText.IsEnabled = false;
+                    if (ChatWindowIsOpened) chatWindow.btnSend.IsEnabled = false;
+                });
+                for (int i = 0; i < NoOfPackets; i++)
+                {
+                    if (TotalLength > 1024)
+                    {
+                        CurrentPacketLength = 1024;
+                        TotalLength = TotalLength - 1024;
+                    }
+                    else
+                    {
+                        CurrentPacketLength = TotalLength;
+                    }
+                    //-----------------------------
+                    SendingBuffer = new Byte[CurrentPacketLength];
+                    file.Read(SendingBuffer, 0, CurrentPacketLength);
+                    tcpStream.Write(SendingBuffer, 0, SendingBuffer.Length);
+                }
+                file.Close();
+                SenderTcpClient.Close();
+                Dispatcher.Invoke(UpdateMainForm);
+                MessageBox.Show("Datei erfolgreich versendet", "Fertig!", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception e)
+            {
+                Dispatcher.Invoke(UpdateMainForm);
+                MessageBox.Show(e.Message, "Error", MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            }
         }
-
-        private void WaitForData()
+        
+        private void WaitForData(bool textOrFile)
         {
             Debug.WriteLine("Warte auf Reaktion des ListenerTask");
             try

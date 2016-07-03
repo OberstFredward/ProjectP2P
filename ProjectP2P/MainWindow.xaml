@@ -23,7 +23,7 @@
                     <ColumnDefinition Width="456*"/>
                     <ColumnDefinition Width="37*"/>
                 </Grid.ColumnDefinitions>
-                <Button x:Name="btnFile" HorizontalAlignment="Left" VerticalAlignment="Top" Width="143" Height="109" Background="Transparent" Margin="294,59,0,0" Visibility="Hidden" ToolTip="Datei versenden">
+                <Button x:Name="btnFile" HorizontalAlignment="Left" VerticalAlignment="Top" Width="143" Height="109" Background="Transparent" Margin="294,59,0,0" Visibility="Hidden" ToolTip="Datei versenden" Click="BtnFile_OnClick">
                     <Image x:Name="image" Height="100" Width="125" Source="pictures/File.png"/>
                 </Button>
                 <Button x:Name="btnText" HorizontalAlignment="Left" Margin="46,59,0,0" VerticalAlignment="Top" Width="143" Height="109" Background="Transparent" Click="btnText_Click" Visibility="Hidden" ToolTip="Text versenden">
